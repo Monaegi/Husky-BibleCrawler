@@ -19,6 +19,18 @@ def requests_from_catholic_goodnews(url, payload):
     return requests.get(url, params=payload)
 
 
+def soup_from_requests(requests):
+    """
+    리퀘스트 객체에서 soup 객체를 받아온다
+    :param requests: requests 객체
+    :return: soup 객체
+    """
+    text = requests.text
+    return BeautifulSoup(text, 'lxml')
+
+
 if __name__ == '__main__':
     r = requests_from_catholic_goodnews(BASE_URL, PAYLOAD)
     print(r)
+    s = soup_from_requests(r)
+    print(s)
