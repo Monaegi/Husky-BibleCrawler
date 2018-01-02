@@ -29,8 +29,21 @@ def soup_from_requests(requests):
     return BeautifulSoup(text, 'lxml')
 
 
+def texts_from_soup(soup):
+    """
+    soup 객체에서 성경 구절 텍스트 리스트를 받아온다
+    :param soup: soup 객체
+    :return: 성경 구절 리스트
+    """
+    texts = soup.select_one('#container > .type3 > #scrapSend > #font_chg > tbody')
+    li = texts.find_all('td', attrs={'class': 'tt'})
+    return [i.text.strip() for i in li]
+
+
 if __name__ == '__main__':
     r = requests_from_catholic_goodnews(BASE_URL, PAYLOAD)
     print(r)
     s = soup_from_requests(r)
-    print(s)
+    # print(s)
+    t = texts_from_soup(s)
+    print(t)

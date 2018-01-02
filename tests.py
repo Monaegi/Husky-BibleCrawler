@@ -11,14 +11,19 @@ class CrawlerTest(unittest.TestCase):
             url=self.base_url,
             payload=self.params,
         )
+        self.soup = crawler.soup_from_requests(self.requests)
 
     def test_requests_from_catholic_goodnews(self):
-        r = self.requests
-        self.assertEqual(r.status_code, 200)
+        requests = self.requests
+        self.assertEqual(requests.status_code, 200)
 
     def test_soup_is_exist(self):
-        soup = crawler.soup_from_requests(self.requests)
+        soup = self.soup
         self.assertFalse(soup.can_be_empty_element)
+
+    def test_select_texts_from_soup(self):
+        li = crawler.texts_from_soup(self.soup)
+        self.assertEqual(type(li), type(list()))
 
 
 if __name__ == '__main__':
