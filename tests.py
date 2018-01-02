@@ -20,6 +20,7 @@ class CrawlerTest(unittest.TestCase):
             payload=self.params,
         )
         self.soup = crawler.soup_from_requests(self.requests)
+        self.generator = crawler.texts_from_soup(self.soup)
 
     def test_requests_from_catholic_goodnews(self):
         """
@@ -39,12 +40,29 @@ class CrawlerTest(unittest.TestCase):
 
     def test_select_texts_from_soup(self):
         """
-        BS 객체에서 뽑아낸 성경 구절 리스트가 정상적으로 생성되는지 테스트
+        BS 객체에서 뽑아낸 성경 구절 튜플이 정상적으로 생성되는지 테스트
         :return:
         """
-        li = crawler.texts_from_soup(self.soup)
-        self.assertEqual(type(li), type(list()))
+        gen = self.generator
+        li = [i for i in gen]
+        self.assertIsNotNone(li)
 
+    def test_select_primary_key_of_gospel(self):
+        """
+        복음서의 pk값과 복음서 이름을 OrderedDict로 크롤링한 것이 정상적으로 생성되는지 테스트
+        :return:
+        """
+        ordered_dict = crawler.primary_key_of_gospel(self.soup)
+        self.assertEqual(len(ordered_dict), 4)
+
+
+    def test_namedtuple_from_list(self):
+        """
+        list의 요소들에 복음서와 구절 숫자를 입혀 네임드튜플로 생성되는지 테스트
+        :return: None
+        """
+        namedtuple = crawler.make_namedtuple(self.generator)
+        self.assertIsNotNone(namedtuple)
 
 if __name__ == '__main__':
     unittest.main()
