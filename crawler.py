@@ -1,6 +1,5 @@
-from collections import OrderedDict
 from typing import NamedTuple
-from urllib.parse import urlparse, parse_qs, parse_qsl, urlsplit
+from urllib.parse import parse_qsl
 
 from bs4 import BeautifulSoup
 import requests
@@ -14,10 +13,10 @@ PAYLOAD = {
 
 
 class BibleInfo(NamedTuple):
-    gospels: str
-    chapters: int
-    paragraphs: int
-    contents: str
+    gospels: str  # 성경책
+    chapters: int  # 장
+    paragraphs: str  # 절
+    contents: str  # 본문
 
 
 def requests_from_catholic_goodnews(url, payload):
@@ -42,9 +41,9 @@ def soup_from_requests(requests):
 
 def primary_key_of_gospel(soup):
     """
-    soup 객체에서 복음서 이름과 고유 번호를 가져와 OrderedDict를 생성한다
+    soup 객체에서 복음서 이름과 고유 번호를 가져와 Dict를 생성한다
     :param soup: soup 객체
-    :return: 복음서 이름과 고유 번호의 OrderedDict
+    :return: 복음서 이름과 고유 번호의 Dict
     """
     contents = soup.select('#container > .list_c2 > li > .list_c2_sub > li > a')
 
@@ -56,42 +55,51 @@ def primary_key_of_gospel(soup):
 
     dic = {int(i[0][1]): i[1] for i in zip(pk_lists, keywords)}
 
-    ordered = OrderedDict(sorted(dic.items(), key=lambda t: t[0]))
-
-    return ordered
+    return dic
 
 
 def texts_from_soup(soup):
     """
     soup 객체에서 성경 구절 텍스트 제너레이터 컴프리헨션을 생성한다
     :param soup: soup 객체
-    :return: 성경 구절 리스트
+    :return: 성경 구절과 절 번호가 튜플로 엮인 제너레이터
     """
     contents = soup.select_one('#container > .type3 > #scrapSend > #font_chg > tbody')
 
-    raw_texts = contents.find_all('td', attrs={'class': 'tt'})
-    strip_texts = [i.text.strip() for i in raw_texts]
-
     raw_paragraphs = contents.find_all('td', attrs={'class': 'num_color'})
-    strip_paragraphs = [p.text.strip() for p in raw_paragraphs]
-    return ((item[1], item[0]) for item in zip(strip_texts, strip_paragraphs))
+    strip_paragraphs = (p.text.strip() for p in raw_paragraphs)
+
+    raw_texts = contents.find_all('td', attrs={'class': 'tt'})
+    strip_texts = (i.text.strip() for i in raw_texts)
+
+    return ((item[0], item[1]) for item in zip(strip_paragraphs, strip_texts))
 
 
-def make_namedtuple(gen):
+def make_namedtuple(dic, gen):
     """
     list에 복음서와 구절을 입혀 네임드튜플로 저장한다
-    :param gen: 성경 구절과 넘버 제너레이터
-    :return:
+    :param dic: 성경 각 권의 고유 번호와 키워드가 담긴 딕셔너리
+    :param gen: 성경 구절과 절 번호 제너레이터
+    :return: 성경 각 권의 키워드, 넘버, 구절이 담긴 네임드튜플
     """
-    return
+    iters = ([dic[PAYLOAD['n']], PAYLOAD['p'], item[0], item[1]] for item in gen)
+
+    return [BibleInfo(
+        gospels=i[0],
+        chapters=i[1],
+        paragraphs=i[2],
+        contents=i[3],
+    ) for i in iters]
 
 
 if __name__ == '__main__':
     r = requests_from_catholic_goodnews(BASE_URL, PAYLOAD)
-    print(r)
+    # print(r)
     s = soup_from_requests(r)
     # print(s)
-    # t = texts_from_soup(s)
-    # print(t)
-    g = primary_key_of_gospel(s)
-    print(g)
+    dic = primary_key_of_gospel(s)
+    # print(dic)
+    gen = texts_from_soup(s)
+    # print(gen)
+    n = make_namedtuple(dic, gen)
+    print(n)
