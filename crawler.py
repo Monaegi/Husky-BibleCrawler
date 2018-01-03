@@ -1,4 +1,6 @@
+from collections import OrderedDict
 from typing import NamedTuple
+from urllib.parse import urlparse, parse_qs, parse_qsl, urlsplit
 
 from bs4 import BeautifulSoup
 import requests
@@ -44,7 +46,19 @@ def primary_key_of_gospel(soup):
     :param soup: soup 객체
     :return: 복음서 이름과 고유 번호의 OrderedDict
     """
-    contents = soup
+    contents = soup.select('#container > .list_c2 > li > .list_c2_sub > li > a')
+
+    links = (i.get('href') for i in contents)
+    parse = (parse_qsl(i) for i in links)
+    pk_lists = (i[1] for i in parse)
+
+    keywords = (i.get_text() for i in contents)
+
+    dic = {int(i[0][1]): i[1] for i in zip(pk_lists, keywords)}
+
+    ordered = OrderedDict(sorted(dic.items(), key=lambda t: t[0]))
+
+    return ordered
 
 
 def texts_from_soup(soup):
@@ -77,5 +91,7 @@ if __name__ == '__main__':
     print(r)
     s = soup_from_requests(r)
     # print(s)
-    t = texts_from_soup(s)
-    print(t)
+    # t = texts_from_soup(s)
+    # print(t)
+    g = primary_key_of_gospel(s)
+    print(g)

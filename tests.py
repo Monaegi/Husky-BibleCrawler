@@ -53,8 +53,7 @@ class CrawlerTest(unittest.TestCase):
         :return:
         """
         ordered_dict = crawler.primary_key_of_gospel(self.soup)
-        self.assertEqual(len(ordered_dict), 4)
-
+        self.assertEqual(len(ordered_dict), 246)
 
     def test_namedtuple_from_list(self):
         """
@@ -63,6 +62,7 @@ class CrawlerTest(unittest.TestCase):
         """
         namedtuple = crawler.make_namedtuple(self.generator)
         self.assertIsNotNone(namedtuple)
+
 
 if __name__ == '__main__':
     unittest.main()
