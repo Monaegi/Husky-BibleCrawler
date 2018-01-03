@@ -53,9 +53,7 @@ def primary_key_of_gospel(soup):
 
     keywords = (i.get_text() for i in contents)
 
-    dic = {int(i[0][1]): i[1] for i in zip(pk_lists, keywords)}
-
-    return dic
+    return {int(i[0][1]): i[1] for i in zip(pk_lists, keywords)}
 
 
 def texts_from_soup(soup):
