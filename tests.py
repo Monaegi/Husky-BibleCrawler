@@ -8,11 +8,12 @@ class CrawlerTest(unittest.TestCase):
         """
         크롤러 테스트를 위한 전역변수 설정
         1. base_url: 크롤링을 하기 위한 가톨릭 굿뉴스 성경 사이트
-        2. params: 신약성경, 구약성경 및 각 복음서의 고유 pk 값, 페이지
+        2. params: 신약성경, 구약성경 및 각 성경책의 고유 pk 값, 페이지
         3. requests: Requests 객체
         4. soup: BeautifulSoup 객체
-        5. dict: 복음서 이름과 고유 번호 dict
-        6. generator = 성경 구절과 튜플이 담긴 generator
+        5. dict: 성경책 이름과 고유 pk로 이루어진 dict
+        6. generator: 성경 절과 본문 튜플이 담긴 generator
+        7. namedtuple: 모든 요소를 통합해서 만든 namedtuple
         :return: None
         """
         self.base_url = crawler.BASE_URL
@@ -24,6 +25,7 @@ class CrawlerTest(unittest.TestCase):
         self.soup = crawler.soup_from_requests(self.requests)
         self.dict = crawler.primary_key_of_gospel(self.soup)
         self.generator = crawler.texts_from_soup(self.soup)
+        self.namedtuple = crawler.make_namedtuple(self.dict, self.generator)
 
     def test_requests_from_catholic_goodnews(self):
         """
@@ -43,7 +45,7 @@ class CrawlerTest(unittest.TestCase):
 
     def test_select_primary_key_of_gospel(self):
         """
-        복음서의 pk값과 복음서 이름을 Dict로 크롤링한 것이 정상적으로 생성되는지 테스트
+        복음서의 pk값과 성경책 이름을 Dict로 크롤링한 것이 정상적으로 생성되는지 테스트
         :return: None
         """
         dic = self.dict
@@ -60,10 +62,10 @@ class CrawlerTest(unittest.TestCase):
 
     def test_namedtuple_from_list(self):
         """
-        list의 요소들에 복음서와 구절 숫자를 입혀 네임드튜플로 생성되는지 테스트
+        모든 요소들이 네임드튜플로 생성되는지 테스트
         :return: None
         """
-        namedtuple = crawler.make_namedtuple(self.dict, self.generator)
+        namedtuple = self.namedtuple
         self.assertIsNotNone(namedtuple)
 
 
