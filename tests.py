@@ -73,9 +73,18 @@ class CrawlerTest(unittest.TestCase):
 
 class UITest(unittest.TestCase):
     def setUp(self):
+        """
+        UI 테스트를 위한 전역변수 설정
+        1. self.elements: main.py의 Elements 클래스
+        :return:
+        """
         self.elements = main.Elements()
 
     def test_elements(self):
+        """
+        UI 요소가 잘 출력되는지 테스트
+        :return:
+        """
         bar = self.elements.main_bar
         self.assertEqual(len(bar), 52)
 
@@ -83,6 +92,10 @@ class UITest(unittest.TestCase):
         self.assertEqual(title.replace(' ', ''), "가톨릭말씀사탕")
 
     def test_get_input_quit_message_from_start_menu(self):
+        """
+        input 함수에서 'q' 메시지를 넣었을 때 잘 종료되는지 테스트
+        :return:
+        """
         user_input = [
             'q',
         ]
