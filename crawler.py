@@ -1,9 +1,12 @@
 from typing import NamedTuple
 from urllib.parse import parse_qsl
 
+import re
 from bs4 import BeautifulSoup
 import requests
 
+
+# --- 자료구조 --- #
 
 class BibleInfo(NamedTuple):
     """
@@ -14,6 +17,8 @@ class BibleInfo(NamedTuple):
     paragraphs: str  # 절
     contents: str  # 본문
 
+
+# --- HTML 문서 가져오기 --- #
 
 def make_payload(bible_num, book_num=None, paragraph_num=None, commit=False):
     """
@@ -58,6 +63,36 @@ def soup_from_requests(requests_obj):
     # HTML 문서를 beautifulsoup으로 렌더링해서 soup 객체로 만든다
     return BeautifulSoup(text, 'lxml')
 
+
+# --- 책과 장이 결정되기 전 성경책 리스트 크롤링 --- #
+
+def book_list_from_soup(soup):
+    """
+    soup 객체에서 각 성경책과 성경책의 전체 장 수를 엮은 딕셔너리 생성
+    :param soup: soup 객체
+    :return: 성경책과 전체 장 수를 엮은 딕셔너리
+    """
+    contents = soup.select('#scrapSend > .register01 > tbody > tr')
+    del contents[0], contents[5], contents[21], contents[28]
+
+    book_li = []
+    chapter_li = []
+
+    def has_href(href):
+        return href
+
+    for item in contents:
+        book_name = item.find_all(href=has_href)
+        book_li.append(book_name[1].text)
+
+        raw_td = item.find(string=re.compile(r'^\w\s\d+\w$'))
+        chapter_num = re.search(r'\d+', raw_td)
+        chapter_li.append(chapter_num.group())
+
+    return {i[0]: i[1] for i in zip(book_li, chapter_li)}
+
+
+# --- 책과 장이 결정된 이후 복음 크롤링 --- #
 
 def primary_key_of_gospel(soup):
     """
@@ -143,8 +178,13 @@ if __name__ == '__main__':
     r = requests_from_catholic_goodnews(p)
     s = soup_from_requests(r)
 
+    # 리스트 크롤링
+    # b = book_list_from_soup(s)
+    # print(b)
+
     # 책과 장이 결정되어야 가능함
     g = primary_key_of_gospel(s)
-    t = texts_from_soup(s)
-    m = make_namedtuple(p, g, t)
-    print(m)
+    print(g)
+    # t = texts_from_soup(s)
+    # m = make_namedtuple(p, g, t)
+    # print(m)

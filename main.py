@@ -47,7 +47,6 @@ class Elements:
         return None
 
 
-
 def main():
     """
     크롤러 실행 UI 함수

@@ -9,26 +9,24 @@ class CrawlerTest(unittest.TestCase):
     def setUp(self):
         """
         크롤러 테스트를 위한 전역변수 설정
-        1. base_url: 크롤링을 하기 위한 가톨릭 굿뉴스 성경 사이트
-        2. params: 신약성경, 구약성경 및 각 성경책의 고유 pk 값, 페이지
-        3. requests: Requests 객체
-        4. soup: BeautifulSoup 객체
-        5. dict: 성경책 이름과 고유 pk로 이루어진 dict
-        6. generator: 성경 절과 본문 튜플이 담긴 generator
-        7. namedtuple: 모든 요소를 통합해서 만든 namedtuple
         :return: None
         """
-        self.params = crawler.make_payload(
+        self.params_without_item = crawler.make_payload(1)
+        self.requests_1 = crawler.requests_from_catholic_goodnews(self.params_without_item)
+        self.soup_1 = crawler.soup_from_requests(self.requests_1)
+
+        self.params_with_extra_item = crawler.make_payload(
             bible_num=1,
             book_num=101,
             paragraph_num=1,
             commit=True
         )
-        self.requests = crawler.requests_from_catholic_goodnews(payload=self.params)
-        self.soup = crawler.soup_from_requests(self.requests)
-        self.dict = crawler.primary_key_of_gospel(self.soup)
-        self.generator = crawler.texts_from_soup(self.soup)
-        self.namedtuple = crawler.make_namedtuple(self.params, self.dict, self.generator)
+        self.requests_2 = crawler.requests_from_catholic_goodnews(payload=self.params_with_extra_item)
+        self.soup_2 = crawler.soup_from_requests(self.requests_2)
+
+        self.dict = crawler.primary_key_of_gospel(self.soup_2)
+        self.generator = crawler.texts_from_soup(self.soup_2)
+        self.namedtuple = crawler.make_namedtuple(self.params_with_extra_item, self.dict, self.generator)
 
     def test_make_payload(self):
         """
@@ -49,7 +47,7 @@ class CrawlerTest(unittest.TestCase):
         Request 객체가 정상적으로 생성되어 200 응답코드를 주는지 테스트
         :return: None
         """
-        requests = self.requests
+        requests = self.requests_2
         self.assertEqual(requests.status_code, 200)
 
     def test_soup_is_exist(self):
@@ -57,8 +55,16 @@ class CrawlerTest(unittest.TestCase):
         BeautifulSoup 객체가 정상적으로 생성되는지 테스트
         :return: None
         """
-        soup = self.soup
+        soup = self.soup_2
         self.assertFalse(soup.can_be_empty_element)
+
+    def test_book_list(self):
+        """
+        성경책 리스트 크롤링 테스트
+        :return:
+        """
+        dic = crawler.book_list_from_soup(self.soup_1)
+        self.assertEqual(len(dic), 46)
 
     def test_select_primary_key_of_gospel(self):
         """
