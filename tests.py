@@ -18,7 +18,7 @@ class CrawlerTest(unittest.TestCase):
         self.params_with_extra_item = crawler.make_payload(
             bible_num=1,
             book_num=101,
-            paragraph_num=1,
+            chapter_num=1,
             commit=True
         )
         self.requests_2 = crawler.requests_from_catholic_goodnews(payload=self.params_with_extra_item)
@@ -38,7 +38,7 @@ class CrawlerTest(unittest.TestCase):
         payload_after_decision = crawler.make_payload(
             bible_num=1,
             book_num=101,
-            paragraph_num=1,
+            chapter_num=1,
             commit=True)
         self.assertEqual(len(payload_after_decision), 3)
 

@@ -12,26 +12,26 @@ class BibleInfo(NamedTuple):
     """
     말씀 정보를 저장하기 위한 네임드튜플
     """
-    gospels: str  # 성경책
+    books: str  # 성경책
     chapters: int  # 장
-    paragraphs: str  # 절
+    paragraphs: int  # 절
     contents: str  # 본문
 
 
 # --- HTML 문서 가져오기 --- #
 
-def make_payload(bible_num, book_num=None, paragraph_num=None, commit=False):
+def make_payload(bible_num, book_num=None, chapter_num=None, commit=False):
     """
     조건에 따라 payload 값을 변경하기 위한 함수
     :param bible_num: 구약성경 / 신약성경
     :param book_num: 성경책 고유 pk
-    :param paragraph_num: 장 넘버
+    :param chapter_num: 장 넘버
     :param commit: 책 / 장 숫자가 정해졌는가 정해지지 않았는가
     :return: payload 값이 담긴 딕셔너리
     """
     return {'m': bible_num} if commit is False else {'m': bible_num,
                                                      'n': book_num,
-                                                     'p': paragraph_num}
+                                                     'p': chapter_num}
 
 
 def requests_from_catholic_goodnews(payload):
@@ -136,7 +136,7 @@ def texts_from_soup(soup):
     raw_paragraphs = contents.find_all('td', attrs={'class': 'num_color'})
     # <td> 요소에서 순수 숫자만 꺼낸다
     # ex: 1, 2, 3, 4, ...
-    strip_paragraphs = (p.text.strip() for p in raw_paragraphs)
+    strip_paragraphs = (pg.text.strip() for pg in raw_paragraphs)
 
     # <tbody> 요소에서 성경 본문 정보가 담긴 <td> 요소를 리스트로 꺼낸다
     raw_texts = contents.find_all('td', attrs={'class': 'tt'})
@@ -146,7 +146,10 @@ def texts_from_soup(soup):
 
     # strip_paragraphs와 strip_texts를 병렬 순회하여 두 요소를 튜플로 담은 제너레이터를 만든다
     # ex: ('1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
-    return ((item[0], item[1]) for item in zip(strip_paragraphs, strip_texts))
+    raw_gen = ((item[0], item[1]) for item in zip(strip_paragraphs, strip_texts))
+
+    # 본문이 아닌 제목 요소를 제거하기 위해 조건문을 달아 순회한다
+    return (i for i in raw_gen if i[0] is not '')
 
 
 def make_namedtuple(payload, dic, gen):
@@ -159,12 +162,12 @@ def make_namedtuple(payload, dic, gen):
     """
     # BibleInfo 네임드튜플에 담기 위해 딕셔너리와 제너레이터를 병렬 순회하여 모든 요소를 하나의 리스트에 담은 제너레이터를 만든다
     # ex: ['마태', 1, '1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.'] ...
-    result_comp = ([dic[payload['n']], payload['p'], item[0], item[1]] for item in gen)
+    result_comp = ([dic[payload['n']], payload['p'], int(item[0]), item[1]] for item in gen)
 
     # 제너레이터를 리스트 컴프리헨션으로 순회하며 네임드튜플에 담는다
-    # ex: BibleInfo(gospels='마태', chapters=1, paragraphs='1', contents='다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
+    # ex: BibleInfo(books='마태', chapters=1, paragraphs=1, contents='다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
     return [BibleInfo(
-        gospels=i[0],
+        books=i[0],
         chapters=i[1],
         paragraphs=i[2],
         contents=i[3],
@@ -173,7 +176,7 @@ def make_namedtuple(payload, dic, gen):
 
 if __name__ == '__main__':
     # 책과 장이 결정되기 전까지
-    d = make_payload(1)
+    # d = make_payload(1)
     p = make_payload(1, 101, 1, commit=True)
     r = requests_from_catholic_goodnews(p)
     s = soup_from_requests(r)
@@ -184,7 +187,7 @@ if __name__ == '__main__':
 
     # 책과 장이 결정되어야 가능함
     g = primary_key_of_gospel(s)
-    print(g)
-    # t = texts_from_soup(s)
-    # m = make_namedtuple(p, g, t)
-    # print(m)
+    # print(g)
+    t = texts_from_soup(s)
+    m = make_namedtuple(p, g, t)
+    print(m)
