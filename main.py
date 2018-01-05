@@ -1,3 +1,6 @@
+import random
+
+
 class Elements:
     """
     UI 환경에 사용하는 텍스트, 실행 바 등등을 정의하는 함수
@@ -44,7 +47,19 @@ class Elements:
         크롤러에서 랜덤으로 말씀을 가져온다
         :return: 말씀 객체
         """
-        return None
+
+        def make_random_number():
+            """
+            성경 숫자를 랜덤으로 만들어낼 함수
+            :return:
+            """
+            bible_num = random.randint(1, 2)
+
+            book_num = random.randint(101, 146) if bible_num is 1 else random.randint(147, 173)
+
+            return bible_num, book_num
+
+        print(make_random_number())
 
 
 def main():
