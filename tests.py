@@ -18,16 +18,31 @@ class CrawlerTest(unittest.TestCase):
         7. namedtuple: 모든 요소를 통합해서 만든 namedtuple
         :return: None
         """
-        self.base_url = crawler.BASE_URL
-        self.params = crawler.PAYLOAD
-        self.requests = crawler.requests_from_catholic_goodnews(
-            url=self.base_url,
-            payload=self.params,
+        self.params = crawler.make_payload(
+            bible_num=1,
+            book_num=101,
+            paragraph_num=1,
+            commit=True
         )
+        self.requests = crawler.requests_from_catholic_goodnews(payload=self.params)
         self.soup = crawler.soup_from_requests(self.requests)
         self.dict = crawler.primary_key_of_gospel(self.soup)
         self.generator = crawler.texts_from_soup(self.soup)
-        self.namedtuple = crawler.make_namedtuple(self.dict, self.generator)
+        self.namedtuple = crawler.make_namedtuple(self.params, self.dict, self.generator)
+
+    def test_make_payload(self):
+        """
+        payload 값을 결정하는 함수가 조건에 따라 다르게 작동하는지 테스트
+        :return: None
+        """
+        payload_default = crawler.make_payload(bible_num=1, commit=False)
+        self.assertEqual(len(payload_default), 1)
+        payload_after_decision = crawler.make_payload(
+            bible_num=1,
+            book_num=101,
+            paragraph_num=1,
+            commit=True)
+        self.assertEqual(len(payload_after_decision), 3)
 
     def test_requests_from_catholic_goodnews(self):
         """
@@ -105,6 +120,14 @@ class UITest(unittest.TestCase):
         with patch('builtins.input', side_effect=user_input):
             stacks = self.elements.start_menu()
         self.assertEqual(stacks, expected_stacks[0])
+
+    def test_get_gospel_message(self):
+        """
+        말씀을 잘 가져오는지 테스트
+        :return:
+        """
+        message = self.elements.get_message()
+        self.assertIsNotNone(message)
 
 
 if __name__ == '__main__':

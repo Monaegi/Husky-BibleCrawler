@@ -4,13 +4,6 @@ from urllib.parse import parse_qsl
 from bs4 import BeautifulSoup
 import requests
 
-BASE_URL = 'http://maria.catholic.or.kr/bible/read/bible_read.asp'
-PAYLOAD = {
-    'm': 2,  # 1: 구약성경, 2: 신약성경 ...
-    'n': 147,  # 전체 성경 각 권의 pk 값
-    'p': 1,  # 페이지 (장)
-}
-
 
 class BibleInfo(NamedTuple):
     """
@@ -22,25 +15,46 @@ class BibleInfo(NamedTuple):
     contents: str  # 본문
 
 
-def requests_from_catholic_goodnews(url, payload):
+def make_payload(bible_num, book_num=None, paragraph_num=None, commit=False):
     """
-    가톨릭 굿뉴스 사이트에서 리퀘스트 객체를 받아온다
-    :param url: request를 받을 url
-    :param payload: parameter 값
+    조건에 따라 payload 값을 변경하기 위한 함수
+    :param bible_num: 구약성경 / 신약성경
+    :param book_num: 성경책 고유 pk
+    :param paragraph_num: 장 넘버
+    :param commit: 책 / 장 숫자가 정해졌는가 정해지지 않았는가
+    :return: payload 값이 담긴 딕셔너리
+    """
+    return {'m': bible_num} if commit is False else {'m': bible_num,
+                                                     'n': book_num,
+                                                     'p': paragraph_num}
+
+
+def requests_from_catholic_goodnews(payload):
+    """
+    payload 값을 받아 requests 객체를 반환한다
+    :param payload: URL의 param 값이 담긴 payload 딕셔너리
     :return: requests 객체
     """
+    # URL 변수들
+    base_url = 'http://maria.catholic.or.kr/bible/read/bible_'
+    url_list = 'list.asp'
+    url_read = 'read.asp'
+
+    # payload가 성경 값만 담고 있으면 list를, 책과 장 값까지 담고 있으면 read를 반환한다
+    result_url = base_url + url_list if len(payload) is 1 else base_url + url_read
+
     # requests를 이용해 HTML 문서가 담긴 requests 객체를 받아온다
-    return requests.get(url, params=payload)
+    return requests.get(result_url, params=payload)
 
 
-def soup_from_requests(requests):
+def soup_from_requests(requests_obj):
     """
     리퀘스트 객체에서 soup 객체를 받아온다
-    :param requests: requests 객체
+    :param requests_obj: requests 객체
     :return: soup 객체
     """
-    # requests 객체에 text 메소드를 써서 문자열 형태의 HTML 페이지를 꺼낸다
-    text = requests.text
+    # requests  객체에 text 메소드를 써서 문자열 형태의 HTML 페이지를 꺼낸다
+    text = requests_obj.text
     # HTML 문서를 beautifulsoup으로 렌더링해서 soup 객체로 만든다
     return BeautifulSoup(text, 'lxml')
 
@@ -100,16 +114,17 @@ def texts_from_soup(soup):
     return ((item[0], item[1]) for item in zip(strip_paragraphs, strip_texts))
 
 
-def make_namedtuple(dic, gen):
+def make_namedtuple(payload, dic, gen):
     """
     list에 복음서와 구절을 입혀 네임드튜플로 저장한다
+    :param payload: URL param 값
     :param dic: 성경 각 권의 고유 번호와 키워드가 담긴 딕셔너리
     :param gen: 성경 구절과 절 번호 제너레이터
     :return: 성경 각 권의 키워드, 넘버, 구절이 담긴 네임드튜플
     """
     # BibleInfo 네임드튜플에 담기 위해 딕셔너리와 제너레이터를 병렬 순회하여 모든 요소를 하나의 리스트에 담은 제너레이터를 만든다
     # ex: ['마태', 1, '1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.'] ...
-    result_comp = ([dic[PAYLOAD['n']], PAYLOAD['p'], item[0], item[1]] for item in gen)
+    result_comp = ([dic[payload['n']], payload['p'], item[0], item[1]] for item in gen)
 
     # 제너레이터를 리스트 컴프리헨션으로 순회하며 네임드튜플에 담는다
     # ex: BibleInfo(gospels='마태', chapters=1, paragraphs='1', contents='다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
@@ -119,3 +134,17 @@ def make_namedtuple(dic, gen):
         paragraphs=i[2],
         contents=i[3],
     ) for i in result_comp]
+
+
+if __name__ == '__main__':
+    # 책과 장이 결정되기 전까지
+    d = make_payload(1)
+    p = make_payload(1, 101, 1, commit=True)
+    r = requests_from_catholic_goodnews(p)
+    s = soup_from_requests(r)
+
+    # 책과 장이 결정되어야 가능함
+    g = primary_key_of_gospel(s)
+    t = texts_from_soup(s)
+    m = make_namedtuple(p, g, t)
+    print(m)

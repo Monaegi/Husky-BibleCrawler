@@ -29,8 +29,7 @@ class Elements:
         """
         if input_data == 'go':
             # 'go'를 입력하면 크롤링을 요청해 말씀을 꺼내온다
-            print('말씀')
-            return self.start_menu()
+            return self.get_message()
         elif input_data == 'q':
             # 'q'를 입력하면 프로그램 종료
             print('\n다음에 다시 만나요!')
@@ -39,6 +38,14 @@ class Elements:
             # 유효하지 않은 값이 들어오면 알려주고 메뉴로 돌려보낸다
             print('\n올바른 값을 입력하세요!')
             return self.start_menu()
+
+    def get_message(self):
+        """
+        크롤러에서 랜덤으로 말씀을 가져온다
+        :return: 말씀 객체
+        """
+        return None
+
 
 
 def main():
