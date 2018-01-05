@@ -119,18 +119,3 @@ def make_namedtuple(dic, gen):
         paragraphs=i[2],
         contents=i[3],
     ) for i in result_comp]
-
-
-if __name__ == '__main__':
-    r = requests_from_catholic_goodnews(BASE_URL, PAYLOAD)
-    # print(r)
-    s = soup_from_requests(r)
-    # print(s)
-    dic = primary_key_of_gospel(s)
-    # print(dic)
-    gen = texts_from_soup(s)
-    # print(gen)
-    n = make_namedtuple(dic, gen)
-    # print(n)
-    for i in n:
-        print(i)

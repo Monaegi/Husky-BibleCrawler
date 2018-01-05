@@ -1,6 +1,8 @@
 import unittest
+from unittest.mock import patch
 
 import crawler
+import main
 
 
 class CrawlerTest(unittest.TestCase):
@@ -67,6 +69,29 @@ class CrawlerTest(unittest.TestCase):
         """
         namedtuple = self.namedtuple
         self.assertIsNotNone(namedtuple)
+
+
+class UITest(unittest.TestCase):
+    def setUp(self):
+        self.elements = main.Elements()
+
+    def test_elements(self):
+        bar = self.elements.main_bar
+        self.assertEqual(len(bar), 52)
+
+        title = self.elements.main_title
+        self.assertEqual(title.replace(' ', ''), "가톨릭말씀사탕")
+
+    def test_get_input_quit_message_from_start_menu(self):
+        user_input = [
+            'q',
+        ]
+        expected_stacks = [
+            self.elements.validate('q'),
+        ]
+        with patch('builtins.input', side_effect=user_input):
+            stacks = self.elements.start_menu()
+        self.assertEqual(stacks, expected_stacks[0])
 
 
 if __name__ == '__main__':
