@@ -12,10 +12,10 @@ class BibleInfo(NamedTuple):
     """
     말씀 정보를 저장하기 위한 네임드튜플
     """
-    books: str  # 성경책
-    chapters: int  # 장
-    paragraphs: int  # 절
-    contents: str  # 본문
+    books_name: str  # 성경책
+    chapter_num: int  # 장
+    paragraph_num: int  # 절
+    texts: str  # 본문
 
 
 # --- HTML 문서 가져오기 --- #
@@ -64,19 +64,34 @@ def soup_from_requests(requests_obj):
     return BeautifulSoup(text, 'lxml')
 
 
-# --- 책과 장이 결정되기 전 성경책 리스트 크롤링 --- #
+# --- 성경 정보를 결정하기 위한 데이터 크롤링 --- #
 
-def book_list_from_soup(soup):
+def contents_from_soup(soup, bible_num):
     """
-    soup 객체에서 각 성경책과 성경책의 전체 장 수를 엮은 딕셔너리 생성
+    soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼내고
+    구약성경, 신약성경에 따라 다른 인덱스를 제거한다
     :param soup: soup 객체
-    :return: 성경책과 전체 장 수를 엮은 딕셔너리
+    :param bible_num:
+    :return: tr 리스트
     """
     # soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼낸다
     contents = soup.select('#scrapSend > .register01 > tbody > tr')
-    # 제목이 담긴 쓸데 없는 요소를 지운다 (구약성경)
-    # 아직 신약성경에는 대응이 안 된다... 흠
-    del contents[0], contents[5], contents[21], contents[28]
+
+    # 구약성경이냐 신약성경이냐에 따라 다르게 퍼져 있는 제목 정보를 지운다
+    if bible_num is 1:
+        del contents[0], contents[5], contents[21], contents[28]
+    else:
+        del contents[0], contents[4], contents[5], contents[26]
+
+    return contents
+
+
+def book_info_from_contents(contents):
+    """
+    tr 리스트에서 href 요소가 있는 anchor 요소만 꺼낸다
+    :param contents: soup 객체로부터 가공을 마친 tr 리스트
+    :return: href 요소가 있는 anchor 리스트
+    """
 
     # href 요소가 있는 td만 꺼내기 위한 함수
     def has_href(href):
@@ -85,12 +100,26 @@ def book_list_from_soup(soup):
     # contents에서 href만 꺼낸 뒤 우리가 가공할 한 가지 anchor만 추출한다
     # 여러 번 호출되기 때문에 제너레이터가 아닌 리스트 컴프리헨션으로 만든다
     # ex: <a href="bible_read.asp?m=1&amp;n=101&amp;p=1">창세</a>
-    book_info = [book.find_all(href=has_href)[1] for book in contents]
+    return [book.find_all(href=has_href)[1] for book in contents]
 
+
+def names_from_book_info(book_info):
+    """
+    book_info 리스트에서 성경책 이름들을 꺼낸다
+    :param book_info:
+    :return: 성경책 이름이 담긴 제너레이터 컴프리헨션
+    """
     # book_info에서 성경책 제목만 꺼낸다
     # ex: 창세, 탈출, 레위 ...
-    name_lists = (name.text for name in book_info)
+    return (name.text for name in book_info)
 
+
+def pks_from_book_info(book_info):
+    """
+    book_info 리스트에서 성경책 고유 pk를 꺼낸다
+    :param book_info:
+    :return: 성경책 pk가 담긴 제너레이터 컴프리헨션
+    """
     # anchor 리스트에서 href로 참조되는 URL을 꺼낸다
     # ex: /bible/read/bible_read.asp?m=2&n=101&p=1
     links = (link.get('href') for link in book_info)
@@ -99,8 +128,15 @@ def book_list_from_soup(soup):
     parse = (parse_qsl(tag) for tag in links)
     # 분할한 요소 가운데 각 성경책의 고유 번호를 담고 있는 1번의 1번 튜플만 꺼낸다
     # ex: 101, 102, 103 ...
-    pk_lists = (pk[1][1] for pk in parse)
+    return (pk[1][1] for pk in parse)
 
+
+def chapters_from_contents(contents):
+    """
+    tr 리스트에서 각 성경책이 몇 장을 가지고 있는지를 꺼내온다
+    :param contents: tr 리스트
+    :return: 성경책의 장 수를 담고 있는 리스트
+    """
     # 각 성경책이 몇 개의 장을 가지고 있는지를 가져온다
     chapter_lists = []
     for chapter in contents:
@@ -111,42 +147,10 @@ def book_list_from_soup(soup):
         # 숫자를 미리 정의한 리스트에 추가한다
         chapter_lists.append(chapter_num.group())
 
-    # 전체 정보들을 하나의 리스트로 묶은 제너레이터 컴프리헨션을 만든다
-    result_comp = ([info[0], info[1], info[2]] for info in zip(name_lists, pk_lists, chapter_lists))
-
-    return result_comp
+    return chapter_lists
 
 
-# --- 책과 장이 결정된 이후 복음 크롤링 --- #
-
-def primary_key_of_gospel(soup):
-    """
-    soup 객체에서 성경책 이름과 고유 번호를 가져와 Dict를 생성한다
-    :param soup: soup 객체
-    :return: 성경책 이름과 고유 번호의 Dict
-    """
-    # soup 객체에서 성경책 이름과 링크가 담긴 anchor 리스트를 꺼낸다
-    # ex: <a href="/bible/read/bible_read.asp?m=2&amp;n=101&amp;p=1">창세</a>
-    contents = soup.select('#container > .list_c2 > li > .list_c2_sub > li > a')
-
-    # anchor 리스트에서 href로 참조되는 URL을 꺼낸다
-    # ex: /bible/read/bible_read.asp?m=2&n=101&p=1
-    links = (i.get('href') for i in contents)
-    # URL을 각 요소로 분할한다
-    # ex: [('/bible/read/bible_read.asp?m', '2'), ('n', '101'), ('p', '1')]
-    parse = (parse_qsl(i) for i in links)
-    # 분할한 요소 가운데 각 성경책의 고유 번호를 담고 있는 1번 튜플만 꺼낸다
-    # ex: ('n', '101')
-    pk_lists = (i[1] for i in parse)
-
-    # anchor 리스트에서 순수 텍스트만 꺼낸다
-    # ex: '창세'
-    keywords = (i.get_text() for i in contents)
-
-    # pk_lists와 keywords를 병렬 순회하여 두 요소를 담은 딕셔너리를 만든다
-    # ex: {101: '창세', 102: '탈출', 103: '레위', 104: '민수' ...}
-    return {int(i[0][1]): i[1] for i in zip(pk_lists, keywords)}
-
+# --- 성경 정보가 결정된 이후 성경 본문 크롤링 --- #
 
 def texts_from_soup(soup):
     """
@@ -187,16 +191,9 @@ def make_namedtuple(payload, dic, gen):
     """
     # BibleInfo 네임드튜플에 담기 위해 딕셔너리와 제너레이터를 병렬 순회하여 모든 요소를 하나의 리스트에 담은 제너레이터를 만든다
     # ex: ['마태', 1, '1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.'] ...
-    result_comp = ([dic[payload['n']], payload['p'], int(item[0]), item[1]] for item in gen)
 
     # 제너레이터를 리스트 컴프리헨션으로 순회하며 네임드튜플에 담는다
     # ex: BibleInfo(books='마태', chapters=1, paragraphs=1, contents='다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
-    return [BibleInfo(
-        books=i[0],
-        chapters=i[1],
-        paragraphs=i[2],
-        contents=i[3],
-    ) for i in result_comp]
 
 
 if __name__ == '__main__':
@@ -205,16 +202,3 @@ if __name__ == '__main__':
     p = make_payload(1, 101, 1, commit=True)
     r = requests_from_catholic_goodnews(d)
     s = soup_from_requests(r)
-
-    # 리스트 크롤링
-    b = book_list_from_soup(s)
-    # print(b)
-
-    for i in b:
-        print(i)
-    # 책과 장이 결정되어야 가능함
-    # g = primary_key_of_gospel(s)
-    # print(g)
-    # t = texts_from_soup(s)
-    # m = make_namedtuple(p, g, t)
-    # print(m)
