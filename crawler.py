@@ -10,8 +10,9 @@ import requests
 
 class BibleInfo(NamedTuple):
     """
-    말씀 정보를 저장하기 위한 네임드튜플
+    성경 정보를 저장하기 위한 네임드튜플
     """
+    primary_key: int  # pk 값
     books_name: str  # 성경책
     chapter_num: int  # 장
     paragraph_num: int  # 절
@@ -66,7 +67,7 @@ def soup_from_requests(requests_obj):
 
 # --- 성경 정보를 결정하기 위한 데이터 크롤링 --- #
 
-def contents_from_soup(soup, bible_num):
+def list_contents_from_soup(soup, bible_num):
     """
     soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼내고
     구약성경, 신약성경에 따라 다른 인덱스를 제거한다
@@ -86,10 +87,10 @@ def contents_from_soup(soup, bible_num):
     return contents
 
 
-def book_info_from_contents(contents):
+def book_info_from_list_contents(list_contents):
     """
     tr 리스트에서 href 요소가 있는 anchor 요소만 꺼낸다
-    :param contents: soup 객체로부터 가공을 마친 tr 리스트
+    :param list_contents: soup 객체로부터 가공을 마친 tr 리스트
     :return: href 요소가 있는 anchor 리스트
     """
 
@@ -100,18 +101,7 @@ def book_info_from_contents(contents):
     # contents에서 href만 꺼낸 뒤 우리가 가공할 한 가지 anchor만 추출한다
     # 여러 번 호출되기 때문에 제너레이터가 아닌 리스트 컴프리헨션으로 만든다
     # ex: <a href="bible_read.asp?m=1&amp;n=101&amp;p=1">창세</a>
-    return [book.find_all(href=has_href)[1] for book in contents]
-
-
-def names_from_book_info(book_info):
-    """
-    book_info 리스트에서 성경책 이름들을 꺼낸다
-    :param book_info:
-    :return: 성경책 이름이 담긴 제너레이터 컴프리헨션
-    """
-    # book_info에서 성경책 제목만 꺼낸다
-    # ex: 창세, 탈출, 레위 ...
-    return (name.text for name in book_info)
+    return [book.find_all(href=has_href)[1] for book in list_contents]
 
 
 def pks_from_book_info(book_info):
@@ -131,15 +121,26 @@ def pks_from_book_info(book_info):
     return (pk[1][1] for pk in parse)
 
 
-def chapters_from_contents(contents):
+def names_from_book_info(book_info):
+    """
+    book_info 리스트에서 성경책 이름들을 꺼낸다
+    :param book_info:
+    :return: 성경책 이름이 담긴 제너레이터 컴프리헨션
+    """
+    # book_info에서 성경책 제목만 꺼낸다
+    # ex: 창세, 탈출, 레위 ...
+    return (name.text for name in book_info)
+
+
+def chapters_from_list_contents(list_contents):
     """
     tr 리스트에서 각 성경책이 몇 장을 가지고 있는지를 꺼내온다
-    :param contents: tr 리스트
+    :param list_contents: tr 리스트
     :return: 성경책의 장 수를 담고 있는 리스트
     """
     # 각 성경책이 몇 개의 장을 가지고 있는지를 가져온다
     chapter_lists = []
-    for chapter in contents:
+    for chapter in list_contents:
         # 정규표현식으로 <td> 요소들 가운데서 '총 00장' 문구만 꺼낸다
         raw_td = chapter.find(string=re.compile(r'^\w\s\d+\w$'))
         # '총 00장' 문구에서 숫자만 걸러낸다
@@ -150,35 +151,41 @@ def chapters_from_contents(contents):
     return chapter_lists
 
 
-# --- 성경 정보가 결정된 이후 성경 본문 크롤링 --- #
+# --- 성경 정보가 결정된 이후 본문 크롤링 --- #
 
-def texts_from_soup(soup):
+def read_contents_from_soup(soup):
     """
-    soup 객체에서 성경 구절 제너레이터 컴프리헨션을 생성한다
+    soup 객체에서 성경 본문과 절 정보가 담긴 <tbody> 요소를 꺼낸다
     :param soup: soup 객체
-    :return: 성경 절과 본문이 튜플로 엮인 제너레이터
+    :return: 성경 본문과 절 정보가 담긴 <tbody> 요소
     """
-    # soup 객체에서 성경 절과 본문이 함께 담긴 <tbody>요소를 꺼낸다
-    contents = soup.select_one('#container > .type3 > #scrapSend > #font_chg > tbody')
+    return soup.select_one('#container > .type3 > #scrapSend > #font_chg > tbody')
 
+
+def paragraphs_from_read_contents(read_contents):
+    """
+    read contents에서 성경 절 정보를 가져온다
+    :param read_contents: <tbody> 요소
+    :return: 성경 절 정보가 담긴 제너레이터 컴프리헨션
+    """
     # <tbody> 요소에서 성경 절 정보가 담긴 <td> 요소를 리스트로 꺼낸다
-    raw_paragraphs = contents.find_all('td', attrs={'class': 'num_color'})
+    raw_paragraphs = read_contents.find_all('td', attrs={'class': 'num_color'})
     # <td> 요소에서 순수 숫자만 꺼낸다
     # ex: 1, 2, 3, 4, ...
-    strip_paragraphs = (pg.text.strip() for pg in raw_paragraphs)
+    return (pg.text.strip() for pg in raw_paragraphs)
 
+
+def texts_from_read_contents(read_contents):
+    """
+    read_contents에서 성경 본문 정보를 가져온다
+    :param read_contents: <tbody> 요소
+    :return: 성경 본문 정보가 담긴 제너레이터 컴프리헨션
+    """
     # <tbody> 요소에서 성경 본문 정보가 담긴 <td> 요소를 리스트로 꺼낸다
-    raw_texts = contents.find_all('td', attrs={'class': 'tt'})
+    raw_texts = read_contents.find_all('td', attrs={'class': 'tt'})
     # <td> 요소에서 순수 텍스트만 꺼낸다
     # ex: 다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보. ...
-    strip_texts = (i.text.strip() for i in raw_texts)
-
-    # strip_paragraphs와 strip_texts를 병렬 순회하여 두 요소를 튜플로 담은 제너레이터를 만든다
-    # ex: ('1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
-    raw_gen = ((item[0], item[1]) for item in zip(strip_paragraphs, strip_texts))
-
-    # 본문이 아닌 제목 요소를 제거하기 위해 조건문을 달아 순회한다
-    return (i for i in raw_gen if i[0] is not '')
+    return (i.text.strip() for i in raw_texts)
 
 
 def make_namedtuple(payload, dic, gen):

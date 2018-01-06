@@ -19,20 +19,25 @@ class CrawlerTest(unittest.TestCase):
         # 구약성경 설정
         self.requests_old = crawler.requests_from_catholic_goodnews(self.params_old)
         self.soup_old = crawler.soup_from_requests(self.requests_old)
-        self.contents_old = crawler.contents_from_soup(self.soup_old, 1)
-        self.book_info_old = crawler.book_info_from_contents(self.contents_old)
+        self.list_contents_old = crawler.list_contents_from_soup(self.soup_old, 1)
+        self.book_info_old = crawler.book_info_from_list_contents(self.list_contents_old)
         self.names_old = crawler.names_from_book_info(self.book_info_old)
         self.pks_old = crawler.pks_from_book_info(self.book_info_old)
-        self.chapters_old = crawler.chapters_from_contents(self.contents_old)
+        self.chapters_old = crawler.chapters_from_list_contents(self.list_contents_old)
 
         # 신약성경 설정
         self.requests_new = crawler.requests_from_catholic_goodnews(self.params_new)
         self.soup_new = crawler.soup_from_requests(self.requests_new)
-        self.contents_new = crawler.contents_from_soup(self.soup_new, 2)
-        self.book_info_new = crawler.book_info_from_contents(self.contents_new)
+        self.list_contents_new = crawler.list_contents_from_soup(self.soup_new, 2)
+        self.book_info_new = crawler.book_info_from_list_contents(self.list_contents_new)
         self.names_new = crawler.names_from_book_info(self.book_info_new)
         self.pks_new = crawler.pks_from_book_info(self.book_info_new)
-        self.chapters_new = crawler.chapters_from_contents(self.contents_new)
+        self.chapters_new = crawler.chapters_from_list_contents(self.list_contents_new)
+
+        # 본문 설정
+        self.requests_item = crawler.requests_from_catholic_goodnews(self.params_item)
+        self.soup_item = crawler.soup_from_requests(self.requests_item)
+        self.read_contents = crawler.read_contents_from_soup(self.soup_item)
 
     # --- HTML 문서 가져오기 --- #
 
@@ -70,20 +75,20 @@ class CrawlerTest(unittest.TestCase):
         self.assertFalse(soup_old.can_be_empty_element)
 
         soup_new = self.soup_new
-        self.assertEqual(soup_new.can_be_empty_element)
+        self.assertFalse(soup_new.can_be_empty_element)
 
-    # --- 성경에 관련된 각 데이터 크롤링 --- #
+    # --- 성경 정보를 결정하기 위한 데이터 크롤링 --- #
 
     def test_contents_from_soup(self):
         """
         soup 객체에서 가져온 contents 객체가 구약성경, 신약성경에 따라 필요없는 요소를 잘 제거하는가
         :return: None
         """
-        contents_old = self.contents_old
-        self.assertEqual(len(contents_old), 46)
+        list_contents_old = self.list_contents_old
+        self.assertEqual(len(list_contents_old), 46)
 
-        contents_new = self.contents_new
-        self.assertEqual(len(contents_new), 27)
+        list_contents_new = self.list_contents_new
+        self.assertEqual(len(list_contents_new), 27)
 
     def test_book_info_from_contents(self):
         """
@@ -95,19 +100,6 @@ class CrawlerTest(unittest.TestCase):
 
         book_info_new = self.book_info_new
         self.assertEqual(len(book_info_new), 27)
-
-    def test_names_from_book_info(self):
-        """
-        book_info 리스트에서 성경책 이름을 잘 가져오는지 테스트
-        :return: None
-        """
-        names_old = self.names_old
-        li = [i for i in names_old]
-        self.assertEqual(len(li), 46)
-
-        names_new = self.names_new
-        li = [i for i in names_new]
-        self.assertEqual(len(li), 27)
 
     def test_pks_from_book_list(self):
         """
@@ -122,6 +114,19 @@ class CrawlerTest(unittest.TestCase):
         li = [i for i in pks_new]
         self.assertEqual(len(li), 27)
 
+    def test_names_from_book_info(self):
+        """
+        book_info 리스트에서 성경책 이름을 잘 가져오는지 테스트
+        :return: None
+        """
+        names_old = self.names_old
+        li = [i for i in names_old]
+        self.assertEqual(len(li), 46)
+
+        names_new = self.names_new
+        li = [i for i in names_new]
+        self.assertEqual(len(li), 27)
+
     def test_chapters_from_contents(self):
         """
         contents 리스트에서 chapter 리스트를 잘 가져오는지 테스트
@@ -133,28 +138,37 @@ class CrawlerTest(unittest.TestCase):
         chapters_new = self.chapters_new
         self.assertEqual(len(chapters_new), 27)
 
-    # --- 책과 장이 결정된 이후 복음 크롤링 --- #
+    # --- 성경 정보가 결정된 이후 본문 크롤링 --- #
 
-    def test_select_texts_from_soup(self):
+    def test_read_contents_is_exist(self):
         """
-        BS 객체에서 뽑아낸 성경 구절 튜플이 정상적으로 생성되는지 테스트
+        soup 객체에서 본문과 절 정보가 담긴 <tbody> 요소를 잘 가져오는지 테스트
         :return: None
         """
-        requests_item = crawler.requests_from_catholic_goodnews(self.params_item)
-        soup_item = crawler.soup_from_requests(requests_item)
-        gen = crawler.texts_from_soup(soup_item)
-        li = [i for i in gen]
-        self.assertIsNotNone(li)
+        read_contents = self.read_contents
+        self.assertFalse(read_contents.can_be_empty_element)
+
+    def test_paragraphs_from_read_contents(self):
+        """
+        read_contents에서 성경 절 정보를 잘 가져오는지 테스트
+        :return: None
+        """
+        paragraphs = crawler.paragraphs_from_read_contents(self.read_contents)
+        self.assertIsNotNone(paragraphs)
+
+    def test_texts_from_read_contents(self):
+        """
+        read_contents에서 성경 본문 정보를 잘 가져오는지 테스트
+        :return: None
+        """
+        texts = crawler.texts_from_read_contents(self.read_contents)
+        self.assertIsNotNone(texts)
 
     def test_namedtuple_from_list(self):
         """
         모든 요소들이 네임드튜플로 생성되는지 테스트
         :return: None
         """
-        requests_item = crawler.requests_from_catholic_goodnews(self.params_item)
-        soup_item = crawler.soup_from_requests(requests_item)
-
-        gen = crawler.texts_from_soup(soup_item)
 
 
 class UITest(unittest.TestCase):
