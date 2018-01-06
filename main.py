@@ -100,11 +100,11 @@ class Elements:
             return self.get_message()
         elif input_data == 'q':
             # 'q'를 입력하면 프로그램 종료
-            print('\n다음에 다시 만나요!')
+            print('\n다음에 다시 만나요!\n')
             return None
         else:
             # 유효하지 않은 값이 들어오면 알려주고 메뉴로 돌려보낸다
-            print('\n올바른 값을 입력하세요!')
+            print('\n올바른 값을 입력하세요!\n')
             return self.start_menu()
 
     def get_message(self):
@@ -122,9 +122,9 @@ class Elements:
         soup_item = self.call_crawler_soup(bn, pk, cn, commit=True)
         bible_data = self.call_bible_data(soup_list, bn, pk)
         bible_info = self.call_bible_info(soup_item, bible_data, rand_num)
-        result_logos = random.choice(bible_info)
-        print(
-            f'{result_logos.texts} ({result_logos.books_name} {result_logos.chapter_num}-{result_logos.paragraph_num})')
+        result = random.choice(bible_info)
+
+        print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
 
         return self.start_menu()
 

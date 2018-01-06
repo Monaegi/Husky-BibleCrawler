@@ -22,7 +22,7 @@ class BibleInfo(NamedTuple):
     """
     books_name: str  # 성경책
     chapter_num: int  # 장
-    paragraph_num: int  # 절
+    paragraph_num: str  # 절
     texts: str  # 본문
 
 
@@ -226,7 +226,7 @@ def make_bible_info(bible_data, rand_num, paragraphs, texts):
     strip_comp = ((i[0], i[1]) for i in zip(paragraphs, texts) if i[0] is not '')
 
     # 성경 제목이 제거된 제너레이터에 성경책 이름과 장 숫자를 첨가해 새로운 제너레이터를 만든다
-    result_comp = ((bible_data.books_name, cn, int(i[0]), i[1]) for i in strip_comp)
+    result_comp = ((bible_data.books_name, cn, i[0], i[1]) for i in strip_comp)
 
     # 최종 제너레이터를 순회하며 네임드튜플에 담는다
     return [BibleInfo(
