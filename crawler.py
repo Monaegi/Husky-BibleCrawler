@@ -8,9 +8,17 @@ import requests
 
 # --- 자료구조 --- #
 
+class BibleData(NamedTuple):
+    """
+    성경 데이터를 정의하는 네임드튜플
+    """
+    books_name: str  # 성경책
+    chapters_count: int  # 각 성경책이 보유한 장 수
+
+
 class BibleInfo(NamedTuple):
     """
-    성경 정보를 저장하기 위한 네임드튜플
+    본문 정보를 저장하기 위한 네임드튜플
     """
     primary_key: int  # pk 값
     books_name: str  # 성경책
@@ -151,6 +159,22 @@ def chapters_from_list_contents(list_contents):
     return chapter_lists
 
 
+def make_bible_data(pks, names, chapters):
+    """
+    성경 데이터를 수합하는 네임드튜플을 만든다
+    :param pks: 성경책 pk 리스트
+    :param names: 성경책 이름
+    :param chapters: 성경책의 각 장 수
+    :return: 성경 pk와 이름, 장 수의 네임드튜플로 이루어진 딕셔너리
+    """
+    list_comp = ([i[0], int(i[1])] for i in zip(names, chapters))
+
+    return {int(i[0]): BibleData(
+        books_name=i[1][0],
+        chapters_count=i[1][1],
+    ) for i in zip(pks, list_comp)}
+
+
 # --- 성경 정보가 결정된 이후 본문 크롤링 --- #
 
 def read_contents_from_soup(soup):
@@ -188,24 +212,21 @@ def texts_from_read_contents(read_contents):
     return (i.text.strip() for i in raw_texts)
 
 
-def make_namedtuple(payload, dic, gen):
-    """
-    list에 복음서와 구절을 입혀 네임드튜플로 저장한다
-    :param payload: URL param 값
-    :param dic: 성경 각 권의 고유 번호와 키워드가 담긴 딕셔너리
-    :param gen: 성경 구절과 절 번호 제너레이터
-    :return: 성경 각 권의 키워드, 넘버, 구절이 담긴 네임드튜플
-    """
-    # BibleInfo 네임드튜플에 담기 위해 딕셔너리와 제너레이터를 병렬 순회하여 모든 요소를 하나의 리스트에 담은 제너레이터를 만든다
-    # ex: ['마태', 1, '1', '다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.'] ...
-
-    # 제너레이터를 리스트 컴프리헨션으로 순회하며 네임드튜플에 담는다
-    # ex: BibleInfo(books='마태', chapters=1, paragraphs=1, contents='다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보.') ...
+def make_namedtuple():
+    pass
 
 
 if __name__ == '__main__':
     # 책과 장이 결정되기 전까지
     d = make_payload(1)
-    p = make_payload(1, 101, 1, commit=True)
     r = requests_from_catholic_goodnews(d)
     s = soup_from_requests(r)
+    li = list_contents_from_soup(s, 1)
+    b = book_info_from_list_contents(li)
+    k = pks_from_book_info(b)
+    n = names_from_book_info(b)
+    c = chapters_from_list_contents(li)
+    bible = make_bible_data(k, n, c)
+
+    a = bible[101].chapters_count
+    print(a)

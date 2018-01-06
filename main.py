@@ -1,11 +1,32 @@
 import random
 
+import crawler
+
 
 class Elements:
     """
     UI 환경에 사용하는 텍스트, 실행 바 등등을 정의하는 함수
     :return: None
     """
+
+    @staticmethod
+    def call_chapter_count(bible_num, primary_key):
+        """
+        성경책이 지니고 있는 총 챕터 숫자를 가져온다
+        :param bible_num: 1. 구약성경, 2: 신약성경
+        :param primary_key: 성경책의 고유 pk 값
+        :return: 성경책이 지니고 있는 총 챕터 숫자
+        """
+        d = crawler.make_payload(bible_num)
+        r = crawler.requests_from_catholic_goodnews(d)
+        s = crawler.soup_from_requests(r)
+        li = crawler.list_contents_from_soup(s, bible_num)
+        b = crawler.book_info_from_list_contents(li)
+        k = crawler.pks_from_book_info(b)
+        n = crawler.names_from_book_info(b)
+        c = crawler.chapters_from_list_contents(li)
+        bible_dict = crawler.make_bible_data(k, n, c)
+        return bible_dict[primary_key].chapters_count
 
     def __init__(self):
         self.main_bar = '=' * 52
@@ -53,13 +74,18 @@ class Elements:
             성경 숫자를 랜덤으로 만들어낼 함수
             :return:
             """
+            # 구약성경: 1, 신약성경: 2
             bible_num = random.randint(1, 2)
+            # 성경책 pk: 구약성경일 경우 101~146 사이, 신약성경일 경우 147~173 사이
+            primary_key = random.randint(101, 146) if bible_num is 1 else random.randint(147, 173)
+            # 장 넘버: 성경책 pk를 통해 알게 된 성경책이 총 몇 개의 장을 가지고 있는지 알아내고,
+            # 그 숫자를 범위로 하는 랜덤 숫자를 가져온다
+            chapter_count = self.call_chapter_count(bible_num, primary_key)
+            chapter_num = random.randint(1, chapter_count)
 
-            book_num = random.randint(101, 146) if bible_num is 1 else random.randint(147, 173)
+            return bible_num, primary_key, chapter_num
 
-            return bible_num, book_num
-
-        print(make_random_number())
+        rand_num = make_random_number()
 
 
 def main():

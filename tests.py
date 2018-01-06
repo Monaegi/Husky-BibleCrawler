@@ -90,7 +90,7 @@ class CrawlerTest(unittest.TestCase):
         list_contents_new = self.list_contents_new
         self.assertEqual(len(list_contents_new), 27)
 
-    def test_book_info_from_contents(self):
+    def test_book_info_from_list_contents(self):
         """
         contents 객체로부터 book_info 리스트가 잘 생성되는지 테스트
         :return:
@@ -127,7 +127,7 @@ class CrawlerTest(unittest.TestCase):
         li = [i for i in names_new]
         self.assertEqual(len(li), 27)
 
-    def test_chapters_from_contents(self):
+    def test_chapters_from_list_contents(self):
         """
         contents 리스트에서 chapter 리스트를 잘 가져오는지 테스트
         :return: None
@@ -137,6 +137,17 @@ class CrawlerTest(unittest.TestCase):
 
         chapters_new = self.chapters_new
         self.assertEqual(len(chapters_new), 27)
+
+    def test_namedtuple_from_bible_data(self):
+        """
+        성경 데이터를 수합하는 네임드튜플 만들기 함수가 잘 작동하는지 테스트
+        :return: None
+        """
+        bible_data_old = crawler.make_bible_data(self.pks_old, self.names_old, self.chapters_old)
+        self.assertEqual(len(bible_data_old), 46)
+
+        bible_data_new = crawler.make_bible_data(self.pks_new, self.names_new, self.chapters_new)
+        self.assertEqual(len(bible_data_new), 27)
 
     # --- 성경 정보가 결정된 이후 본문 크롤링 --- #
 
