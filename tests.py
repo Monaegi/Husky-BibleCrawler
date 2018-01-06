@@ -24,6 +24,7 @@ class CrawlerTest(unittest.TestCase):
         self.names_old = crawler.names_from_book_info(self.book_info_old)
         self.pks_old = crawler.pks_from_book_info(self.book_info_old)
         self.chapters_old = crawler.chapters_from_list_contents(self.list_contents_old)
+        self.bible_data_old = crawler.make_bible_data(self.pks_old, self.names_old, self.chapters_old)
 
         # 신약성경 설정
         self.requests_new = crawler.requests_from_catholic_goodnews(self.params_new)
@@ -33,11 +34,14 @@ class CrawlerTest(unittest.TestCase):
         self.names_new = crawler.names_from_book_info(self.book_info_new)
         self.pks_new = crawler.pks_from_book_info(self.book_info_new)
         self.chapters_new = crawler.chapters_from_list_contents(self.list_contents_new)
+        self.bible_data_new = crawler.make_bible_data(self.pks_new, self.names_new, self.chapters_new)
 
         # 본문 설정
         self.requests_item = crawler.requests_from_catholic_goodnews(self.params_item)
         self.soup_item = crawler.soup_from_requests(self.requests_item)
         self.read_contents = crawler.read_contents_from_soup(self.soup_item)
+        self.paragraphs = crawler.paragraphs_from_read_contents(self.read_contents)
+        self.texts = crawler.texts_from_read_contents(self.read_contents)
 
     # --- HTML 문서 가져오기 --- #
 
@@ -143,10 +147,10 @@ class CrawlerTest(unittest.TestCase):
         성경 데이터를 수합하는 네임드튜플 만들기 함수가 잘 작동하는지 테스트
         :return: None
         """
-        bible_data_old = crawler.make_bible_data(self.pks_old, self.names_old, self.chapters_old)
+        bible_data_old = self.bible_data_old
         self.assertEqual(len(bible_data_old), 46)
 
-        bible_data_new = crawler.make_bible_data(self.pks_new, self.names_new, self.chapters_new)
+        bible_data_new = self.book_info_new
         self.assertEqual(len(bible_data_new), 27)
 
     # --- 성경 정보가 결정된 이후 본문 크롤링 --- #
@@ -164,7 +168,7 @@ class CrawlerTest(unittest.TestCase):
         read_contents에서 성경 절 정보를 잘 가져오는지 테스트
         :return: None
         """
-        paragraphs = crawler.paragraphs_from_read_contents(self.read_contents)
+        paragraphs = self.paragraphs
         self.assertIsNotNone(paragraphs)
 
     def test_texts_from_read_contents(self):
@@ -172,14 +176,17 @@ class CrawlerTest(unittest.TestCase):
         read_contents에서 성경 본문 정보를 잘 가져오는지 테스트
         :return: None
         """
-        texts = crawler.texts_from_read_contents(self.read_contents)
+        texts = self.texts
         self.assertIsNotNone(texts)
 
-    def test_namedtuple_from_list(self):
+    def test_namedtuple_from_bible_info(self):
         """
         모든 요소들이 네임드튜플로 생성되는지 테스트
         :return: None
         """
+        bible_data = self.bible_data_old[101]
+        bible_info = crawler.make_bible_info(bible_data, (1, 101, 1), self.paragraphs, self.texts)
+        self.assertEqual(len(bible_info), 31)
 
 
 class UITest(unittest.TestCase):
@@ -216,13 +223,13 @@ class UITest(unittest.TestCase):
             stacks = self.elements.start_menu()
         self.assertEqual(stacks, expected_stacks[0])
 
-    def test_get_gospel_message(self):
-        """
-        말씀을 잘 가져오는지 테스트
-        :return:
-        """
-        message = self.elements.get_message()
-        self.assertIsNotNone(message)
+    # def test_get_gospel_message(self):
+    #     """
+    #     말씀을 잘 가져오는지 테스트
+    #     :return:
+    #     """
+    #     message = self.elements.get_message()
+    #     self.assertIsNotNone(message)
 
 
 if __name__ == '__main__':

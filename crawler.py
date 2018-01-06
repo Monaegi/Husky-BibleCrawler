@@ -20,7 +20,6 @@ class BibleInfo(NamedTuple):
     """
     본문 정보를 저장하기 위한 네임드튜플
     """
-    primary_key: int  # pk 값
     books_name: str  # 성경책
     chapter_num: int  # 장
     paragraph_num: int  # 절
@@ -29,17 +28,17 @@ class BibleInfo(NamedTuple):
 
 # --- HTML 문서 가져오기 --- #
 
-def make_payload(bible_num, book_num=None, chapter_num=None, commit=False):
+def make_payload(bible_num, primary_key=None, chapter_num=None, commit=False):
     """
     조건에 따라 payload 값을 변경하기 위한 함수
     :param bible_num: 구약성경 / 신약성경
-    :param book_num: 성경책 고유 pk
+    :param primary_key: 성경책 고유 pk
     :param chapter_num: 장 넘버
     :param commit: 책 / 장 숫자가 정해졌는가 정해지지 않았는가
     :return: payload 값이 담긴 딕셔너리
     """
     return {'m': bible_num} if commit is False else {'m': bible_num,
-                                                     'n': book_num,
+                                                     'n': primary_key,
                                                      'p': chapter_num}
 
 
@@ -167,7 +166,7 @@ def make_bible_data(pks, names, chapters):
     :param chapters: 성경책의 각 장 수
     :return: 성경 pk와 이름, 장 수의 네임드튜플로 이루어진 딕셔너리
     """
-    list_comp = ([i[0], int(i[1])] for i in zip(names, chapters))
+    list_comp = ((i[0], int(i[1])) for i in zip(names, chapters))
 
     return {int(i[0]): BibleData(
         books_name=i[1][0],
@@ -196,7 +195,7 @@ def paragraphs_from_read_contents(read_contents):
     raw_paragraphs = read_contents.find_all('td', attrs={'class': 'num_color'})
     # <td> 요소에서 순수 숫자만 꺼낸다
     # ex: 1, 2, 3, 4, ...
-    return (pg.text.strip() for pg in raw_paragraphs)
+    return (sp.text.strip() for sp in raw_paragraphs)
 
 
 def texts_from_read_contents(read_contents):
@@ -212,21 +211,53 @@ def texts_from_read_contents(read_contents):
     return (i.text.strip() for i in raw_texts)
 
 
-def make_namedtuple():
-    pass
+def make_bible_info(bible_data, rand_num, paragraphs, texts):
+    """
+    본문 정보가 담긴 자료구조를 생성한다
+    :param bible_data: 성경책 이름이 담긴 네임드튜플
+    :param rand_num: 성경 정보가 담긴 랜덤 숫자
+    :param paragraphs: 장에 해당하는 절 정보 제너레이터
+    :param texts: 장에 해당하는 본문 정보 제너레이터
+    :return: 본문 정보 네임드튜플로 구성된 리스트
+    """
+    # rand_num을 언패킹
+    bn, pk, cn = rand_num
+    # paragraphs와 texts를 병렬 순회하며 성경 제목이 담긴 요소를 제거한다
+    strip_comp = ((i[0], i[1]) for i in zip(paragraphs, texts) if i[0] is not '')
+
+    # 성경 제목이 제거된 제너레이터에 성경책 이름과 장 숫자를 첨가해 새로운 제너레이터를 만든다
+    result_comp = ((bible_data.books_name, cn, int(i[0]), i[1]) for i in strip_comp)
+
+    # 최종 제너레이터를 순회하며 네임드튜플에 담는다
+    return [BibleInfo(
+        books_name=i[0],
+        chapter_num=i[1],
+        paragraph_num=i[2],
+        texts=i[3],
+    ) for i in result_comp]
 
 
 if __name__ == '__main__':
     # 책과 장이 결정되기 전까지
-    d = make_payload(1)
-    r = requests_from_catholic_goodnews(d)
-    s = soup_from_requests(r)
-    li = list_contents_from_soup(s, 1)
-    b = book_info_from_list_contents(li)
-    k = pks_from_book_info(b)
-    n = names_from_book_info(b)
-    c = chapters_from_list_contents(li)
-    bible = make_bible_data(k, n, c)
-
-    a = bible[101].chapters_count
-    print(a)
+    # d = make_payload(1)
+    # i = make_payload(1, 101, 1, commit=True)
+    # r1 = requests_from_catholic_goodnews(d)
+    # s1 = soup_from_requests(r1)
+    #
+    # r2 = requests_from_catholic_goodnews(i)
+    # s2 = soup_from_requests(r2)
+    #
+    # li = list_contents_from_soup(s1, 1)
+    # b = book_info_from_list_contents(li)
+    # k = pks_from_book_info(b)
+    # n = names_from_book_info(b)
+    # c = chapters_from_list_contents(li)
+    # bible_list = make_bible_data(k, n, c)
+    # bible_data = bible_list[101]
+    #
+    # rc = read_contents_from_soup(s2)
+    # pa = paragraphs_from_read_contents(rc)
+    # te = texts_from_read_contents(rc)
+    # bible_info = make_bible_info(bible_data, (1, 101, 1), pa, te)
+    # print(bible_info)
+    pass
