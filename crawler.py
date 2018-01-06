@@ -238,7 +238,6 @@ def make_bible_info(bible_data, rand_num, paragraphs, texts):
 
 
 if __name__ == '__main__':
-    # 책과 장이 결정되기 전까지
     # d = make_payload(1)
     # i = make_payload(1, 101, 1, commit=True)
     # r1 = requests_from_catholic_goodnews(d)
@@ -259,5 +258,4 @@ if __name__ == '__main__':
     # pa = paragraphs_from_read_contents(rc)
     # te = texts_from_read_contents(rc)
     # bible_info = make_bible_info(bible_data, (1, 101, 1), pa, te)
-    # print(bible_info)
     pass
