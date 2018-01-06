@@ -72,24 +72,49 @@ def book_list_from_soup(soup):
     :param soup: soup 객체
     :return: 성경책과 전체 장 수를 엮은 딕셔너리
     """
+    # soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼낸다
     contents = soup.select('#scrapSend > .register01 > tbody > tr')
+    # 제목이 담긴 쓸데 없는 요소를 지운다 (구약성경)
+    # 아직 신약성경에는 대응이 안 된다... 흠
     del contents[0], contents[5], contents[21], contents[28]
 
-    book_li = []
-    chapter_li = []
-
+    # href 요소가 있는 td만 꺼내기 위한 함수
     def has_href(href):
         return href
 
-    for item in contents:
-        book_name = item.find_all(href=has_href)
-        book_li.append(book_name[1].text)
+    # contents에서 href만 꺼낸 뒤 우리가 가공할 한 가지 anchor만 추출한다
+    # 여러 번 호출되기 때문에 제너레이터가 아닌 리스트 컴프리헨션으로 만든다
+    # ex: <a href="bible_read.asp?m=1&amp;n=101&amp;p=1">창세</a>
+    book_info = [book.find_all(href=has_href)[1] for book in contents]
 
-        raw_td = item.find(string=re.compile(r'^\w\s\d+\w$'))
+    # book_info에서 성경책 제목만 꺼낸다
+    # ex: 창세, 탈출, 레위 ...
+    name_lists = (name.text for name in book_info)
+
+    # anchor 리스트에서 href로 참조되는 URL을 꺼낸다
+    # ex: /bible/read/bible_read.asp?m=2&n=101&p=1
+    links = (link.get('href') for link in book_info)
+    # URL을 각 요소로 분할한다
+    # ex: [('/bible/read/bible_read.asp?m', '2'), ('n', '101'), ('p', '1')]
+    parse = (parse_qsl(tag) for tag in links)
+    # 분할한 요소 가운데 각 성경책의 고유 번호를 담고 있는 1번의 1번 튜플만 꺼낸다
+    # ex: 101, 102, 103 ...
+    pk_lists = (pk[1][1] for pk in parse)
+
+    # 각 성경책이 몇 개의 장을 가지고 있는지를 가져온다
+    chapter_lists = []
+    for chapter in contents:
+        # 정규표현식으로 <td> 요소들 가운데서 '총 00장' 문구만 꺼낸다
+        raw_td = chapter.find(string=re.compile(r'^\w\s\d+\w$'))
+        # '총 00장' 문구에서 숫자만 걸러낸다
         chapter_num = re.search(r'\d+', raw_td)
-        chapter_li.append(chapter_num.group())
+        # 숫자를 미리 정의한 리스트에 추가한다
+        chapter_lists.append(chapter_num.group())
 
-    return {i[0]: i[1] for i in zip(book_li, chapter_li)}
+    # 전체 정보들을 하나의 리스트로 묶은 제너레이터 컴프리헨션을 만든다
+    result_comp = ([info[0], info[1], info[2]] for info in zip(name_lists, pk_lists, chapter_lists))
+
+    return result_comp
 
 
 # --- 책과 장이 결정된 이후 복음 크롤링 --- #
@@ -176,18 +201,20 @@ def make_namedtuple(payload, dic, gen):
 
 if __name__ == '__main__':
     # 책과 장이 결정되기 전까지
-    # d = make_payload(1)
+    d = make_payload(1)
     p = make_payload(1, 101, 1, commit=True)
-    r = requests_from_catholic_goodnews(p)
+    r = requests_from_catholic_goodnews(d)
     s = soup_from_requests(r)
 
     # 리스트 크롤링
-    # b = book_list_from_soup(s)
+    b = book_list_from_soup(s)
     # print(b)
 
+    for i in b:
+        print(i)
     # 책과 장이 결정되어야 가능함
-    g = primary_key_of_gospel(s)
+    # g = primary_key_of_gospel(s)
     # print(g)
-    t = texts_from_soup(s)
-    m = make_namedtuple(p, g, t)
-    print(m)
+    # t = texts_from_soup(s)
+    # m = make_namedtuple(p, g, t)
+    # print(m)

@@ -63,8 +63,8 @@ class CrawlerTest(unittest.TestCase):
         성경책 리스트 크롤링 테스트
         :return:
         """
-        dic = crawler.book_list_from_soup(self.soup_1)
-        self.assertEqual(len(dic), 46)
+        comp = crawler.book_list_from_soup(self.soup_1)
+        self.assertIsNotNone(comp)
 
     def test_select_primary_key_of_gospel(self):
         """
