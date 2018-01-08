@@ -26,35 +26,84 @@ class BibleInfo(NamedTuple):
     texts: str  # 본문
 
 
+# --- 크롤러 --- #
+
 class BibleCrawler:
     """
     <가톨릭 굿뉴스>의 성경 구절을 무작위로 가져오는 크롤러
     """
 
     def __init__(self):
-        pass
+        """
+        인스턴스 속성 정의
+        """
+        self.__bible_num = None
+        self.__primary_key = None
+        self.__chapter_num = None
+        self.__bible_data = None
+        self.__commit = False
+
+    # --- 네임 맹글링 --- #
+    @property
+    def bible_num(self):
+        return self.__bible_num
+
+    @bible_num.setter
+    def bible_num(self, input_num):
+        self.__bible_num = input_num
+
+    @property
+    def primary_key(self):
+        return self.__primary_key
+
+    @primary_key.setter
+    def primary_key(self, input_key):
+        self.__primary_key = input_key
+
+    @property
+    def chapter_num(self):
+        return self.__chapter_num
+
+    @chapter_num.setter
+    def chapter_num(self, input_num):
+        self.__chapter_num = input_num
+
+    @property
+    def bible_data(self):
+        return self.__bible_data
+
+    @bible_data.setter
+    def bible_data(self, input_data):
+        self.__bible_data = input_data
+
+    @property
+    def commit(self):
+        return self.__commit
+
+    @commit.setter
+    def commit(self, input_bool):
+        self.__commit = input_bool
 
     # --- HTML 문서 가져오기 --- #
 
-    def make_payload(self, bible_num, primary_key=None, chapter_num=None, commit=False):
+    def make_payload(self):
         """
         조건에 따라 payload 값을 변경하기 위한 함수
-        :param bible_num: 구약성경 / 신약성경
-        :param primary_key: 성경책 고유 pk
-        :param chapter_num: 장 넘버
-        :param commit: 책 / 장 숫자가 정해졌는가 정해지지 않았는가
         :return: payload 값이 담긴 딕셔너리
         """
-        return {'m': bible_num} if commit is False else {'m': bible_num,
-                                                         'n': primary_key,
-                                                         'p': chapter_num}
+        return {'m': self.bible_num} \
+            if self.commit is False else {'m': self.bible_num,
+                                          'n': self.primary_key,
+                                          'p': self.chapter_num}
 
-    def requests_from_catholic_goodnews(self, payload):
+    def requests_from_catholic_goodnews(self):
         """
         payload 값을 받아 requests 객체를 반환한다
-        :param payload: URL의 param 값이 담긴 payload 딕셔너리
         :return: requests 객체
         """
+        # self.payload를 사용하되 만일 비어 있다면 메서드를 호출한다
+        payload = self.make_payload()
+
         # URL 변수들
         base_url = 'http://maria.catholic.or.kr/bible/read/bible_'
         url_list = 'list.asp'
@@ -66,12 +115,14 @@ class BibleCrawler:
         # requests를 이용해 HTML 문서가 담긴 requests 객체를 받아온다
         return requests.get(result_url, params=payload)
 
-    def soup_from_requests(self, requests_obj):
+    def soup_from_requests(self):
         """
         리퀘스트 객체에서 soup 객체를 받아온다
-        :param requests_obj: requests 객체
         :return: soup 객체
         """
+        # self.requests_obj를 사용하되 만일 비어 있다면 메서드를 호출한다
+        requests_obj = self.requests_from_catholic_goodnews()
+
         # requests  객체에 text 메소드를 써서 문자열 형태의 HTML 페이지를 꺼낸다
         text = requests_obj.text
         # HTML 문서를 beautifulsoup으로 렌더링해서 soup 객체로 만든다
@@ -79,31 +130,33 @@ class BibleCrawler:
 
     # --- 성경 정보를 결정하기 위한 데이터 크롤링 --- #
 
-    def list_contents_from_soup(self, soup, bible_num):
+    def list_contents_from_soup(self):
         """
         soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼내고
         구약성경, 신약성경에 따라 다른 인덱스를 제거한다
-        :param soup: soup 객체
-        :param bible_num:
         :return: tr 리스트
         """
+        # self.soup을 사용하되 만일 비어 있다면 메서드를 호출한다
+        soup = self.soup_from_requests()
+
         # soup 객체에서 성경책 이름과 링크가 담긴 tr 리스트를 꺼낸다
         contents = soup.select('#scrapSend > .register01 > tbody > tr')
 
         # 구약성경이냐 신약성경이냐에 따라 다르게 퍼져 있는 제목 정보를 지운다
-        if bible_num is 1:
+        if self.bible_num is 1:
             del contents[0], contents[5], contents[21], contents[28]
         else:
             del contents[0], contents[4], contents[5], contents[26]
 
         return contents
 
-    def book_info_from_list_contents(self, list_contents):
+    def book_info_from_list_contents(self):
         """
         tr 리스트에서 href 요소가 있는 anchor 요소만 꺼낸다
-        :param list_contents: soup 객체로부터 가공을 마친 tr 리스트
         :return: href 요소가 있는 anchor 리스트
         """
+        # self.list_contents를 사용하되 만일 비어 있다면 메서드를 호출한다
+        list_contents = self.list_contents_from_soup()
 
         # href 요소가 있는 td만 꺼내기 위한 함수
         def has_href(href):
@@ -114,12 +167,14 @@ class BibleCrawler:
         # ex: <a href="bible_read.asp?m=1&amp;n=101&amp;p=1">창세</a>
         return [book.find_all(href=has_href)[1] for book in list_contents]
 
-    def pks_from_book_info(self, book_info):
+    def pks_from_book_info(self):
         """
         book_info 리스트에서 성경책 고유 pk를 꺼낸다
-        :param book_info:
         :return: 성경책 pk가 담긴 제너레이터 컴프리헨션
         """
+        # self.book_info를 사용하되 만일 비어 있다면 메서드를 호출한다
+        book_info = self.book_info_from_list_contents()
+
         # anchor 리스트에서 href로 참조되는 URL을 꺼낸다
         # ex: /bible/read/bible_read.asp?m=2&n=101&p=1
         links = (link.get('href') for link in book_info)
@@ -130,22 +185,26 @@ class BibleCrawler:
         # ex: 101, 102, 103 ...
         return (pk[1][1] for pk in parse)
 
-    def names_from_book_info(self, book_info):
+    def names_from_book_info(self):
         """
         book_info 리스트에서 성경책 이름들을 꺼낸다
-        :param book_info:
         :return: 성경책 이름이 담긴 제너레이터 컴프리헨션
         """
+        # self.book_info를 사용하되 만일 비어 있다면 메서드를 호출한다
+        book_info = self.book_info_from_list_contents()
+
         # book_info에서 성경책 제목만 꺼낸다
         # ex: 창세, 탈출, 레위 ...
         return (name.text for name in book_info)
 
-    def chapters_from_list_contents(self, list_contents):
+    def chapters_from_list_contents(self):
         """
         tr 리스트에서 각 성경책이 몇 장을 가지고 있는지를 꺼내온다
-        :param list_contents: tr 리스트
         :return: 성경책의 장 수를 담고 있는 리스트
         """
+        # self.list_contents를 사용하되 만일 비어 있다면 메서드를 호출한다
+        list_contents = self.list_contents_from_soup()
+
         # 각 성경책이 몇 개의 장을 가지고 있는지를 가져온다
         chapter_lists = []
         for chapter in list_contents:
@@ -158,71 +217,77 @@ class BibleCrawler:
 
         return chapter_lists
 
-    def make_bible_data(self, pks, names, chapters):
+    def make_bible_data(self):
         """
         성경 데이터를 수합하는 네임드튜플을 만든다
-        :param pks: 성경책 pk 리스트
-        :param names: 성경책 이름
-        :param chapters: 성경책의 각 장 수
         :return: 성경 pk와 이름, 장 수의 네임드튜플로 이루어진 딕셔너리
         """
+        # 인스턴스 속성을 가져오거나 속성이 없다면 메서드를 호출한다
+        pks = self.pks_from_book_info()
+        names = self.names_from_book_info()
+        chapters = self.chapters_from_list_contents()
         list_comp = ((i[0], i[1]) for i in zip(names, chapters))
 
-        return {int(i[0]): BibleData(
+        self.bible_data = {int(i[0]): BibleData(
             books_name=i[1][0],
             chapters_count=i[1][1],
         ) for i in zip(pks, list_comp)}
+        return self.bible_data
 
     # --- 성경 정보가 결정된 이후 본문 크롤링 --- #
 
-    def read_contents_from_soup(self, soup):
+    def read_contents_from_soup(self):
         """
         soup 객체에서 성경 본문과 절 정보가 담긴 <tbody> 요소를 꺼낸다
-        :param soup: soup 객체
         :return: 성경 본문과 절 정보가 담긴 <tbody> 요소
         """
+        # self.soup을 사용하되 만일 비어 있다면 메서드를 호출한다
+        soup = self.soup_from_requests()
+
         return soup.select_one('#container > .type3 > #scrapSend > #font_chg > tbody')
 
-    def paragraphs_from_read_contents(self, read_contents):
+    def paragraphs_from_read_contents(self):
         """
         read contents에서 성경 절 정보를 가져온다
-        :param read_contents: <tbody> 요소
         :return: 성경 절 정보가 담긴 제너레이터 컴프리헨션
         """
+        # self.read_contents를 사용하되 만일 비어 있다면 메서드를 호출한다
+        read_contents = self.read_contents_from_soup()
+
         # <tbody> 요소에서 성경 절 정보가 담긴 <td> 요소를 리스트로 꺼낸다
         raw_paragraphs = read_contents.find_all('td', attrs={'class': 'num_color'})
         # <td> 요소에서 순수 숫자만 꺼낸다
         # ex: 1, 2, 3, 4, ...
         return (sp.text.strip() for sp in raw_paragraphs)
 
-    def texts_from_read_contents(self, read_contents):
+    def texts_from_read_contents(self):
         """
         read_contents에서 성경 본문 정보를 가져온다
-        :param read_contents: <tbody> 요소
         :return: 성경 본문 정보가 담긴 제너레이터 컴프리헨션
         """
+        # self.read_contents를 사용하되 만일 비어 있다면 메서드를 호출한다
+        read_contents = self.read_contents_from_soup()
+
         # <tbody> 요소에서 성경 본문 정보가 담긴 <td> 요소를 리스트로 꺼낸다
         raw_texts = read_contents.find_all('td', attrs={'class': 'tt'})
         # <td> 요소에서 순수 텍스트만 꺼낸다
         # ex: 다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보. ...
         return (i.text.strip() for i in raw_texts)
 
-    def make_bible_info(self, bible_data, rand_num, paragraphs, texts):
+    def make_bible_info(self):
         """
         본문 정보가 담긴 자료구조를 생성한다
-        :param bible_data: 성경책 이름이 담긴 네임드튜플
-        :param rand_num: 성경 정보가 담긴 랜덤 숫자
-        :param paragraphs: 장에 해당하는 절 정보 제너레이터
-        :param texts: 장에 해당하는 본문 정보 제너레이터
         :return: 본문 정보 네임드튜플로 구성된 리스트
         """
-        # rand_num을 언패킹
-        bn, pk, cn = rand_num
+        bible_dict = self.bible_data[self.primary_key]
+        paragraphs = self.paragraphs_from_read_contents()
+        texts = self.texts_from_read_contents()
+
         # paragraphs와 texts를 병렬 순회하며 성경 제목이 담긴 요소를 제거한다
         strip_comp = ((i[0], i[1]) for i in zip(paragraphs, texts) if i[0] is not '')
 
         # 성경 제목이 제거된 제너레이터에 성경책 이름과 장 숫자를 첨가해 새로운 제너레이터를 만든다
-        result_comp = ((bible_data.books_name, cn, i[0], i[1]) for i in strip_comp)
+        result_comp = ((bible_dict.books_name, self.chapter_num, i[0], i[1]) for i in strip_comp)
 
         # 최종 제너레이터를 순회하며 네임드튜플에 담는다
         return [BibleInfo(
@@ -234,24 +299,4 @@ class BibleCrawler:
 
 
 if __name__ == '__main__':
-    # d = make_payload(1)
-    # i = make_payload(1, 101, 1, commit=True)
-    # r1 = requests_from_catholic_goodnews(d)
-    # s1 = soup_from_requests(r1)
-    #
-    # r2 = requests_from_catholic_goodnews(i)
-    # s2 = soup_from_requests(r2)
-    #
-    # li = list_contents_from_soup(s1, 1)
-    # b = book_info_from_list_contents(li)
-    # k = pks_from_book_info(b)
-    # n = names_from_book_info(b)
-    # c = chapters_from_list_contents(li)
-    # bible_list = make_bible_data(k, n, c)
-    # bible_data = bible_list[101]
-    #
-    # rc = read_contents_from_soup(s2)
-    # pa = paragraphs_from_read_contents(rc)
-    # te = texts_from_read_contents(rc)
-    # bible_info = make_bible_info(bible_data, (1, 101, 1), pa, te)
     pass
