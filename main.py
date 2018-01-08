@@ -1,6 +1,6 @@
 import random
 
-import crawler
+from crawler import BibleCrawler
 
 
 class Elements:
@@ -9,8 +9,12 @@ class Elements:
     :return: None
     """
 
-    @staticmethod
-    def call_crawler_soup(bible_num, primary_key=None, chapter_num=None, commit=False):
+    def __init__(self):
+        self.main_bar = '=' * 52
+        self.main_title = '가톨릭 말씀사탕'.center(47, ' ')
+        self.crawler = BibleCrawler()
+
+    def call_crawler_soup(self, bible_num, primary_key=None, chapter_num=None, commit=False):
         """
         크롤러 soup 객체를 가져온다
         :param bible_num: 1. 구약성경, 2: 신약성경
@@ -19,12 +23,11 @@ class Elements:
         :param commit: 본문을 가져올 것인가(True), 리스트를 가져올 것인가(False)
         :return: 용도에 맞는 soup 객체
         """
-        d = crawler.make_payload(bible_num, primary_key, chapter_num, commit=commit)
-        r = crawler.requests_from_catholic_goodnews(d)
-        return crawler.soup_from_requests(r)
+        d = self.crawler.make_payload(bible_num, primary_key, chapter_num, commit=commit)
+        r = self.crawler.requests_from_catholic_goodnews(d)
+        return self.crawler.soup_from_requests(r)
 
-    @staticmethod
-    def call_bible_data(soup, bible_num, primary_key):
+    def call_bible_data(self, soup, bible_num, primary_key):
         """
         성경책이 지니고 있는 총 챕터 숫자를 가져온다
         :param soup: soup 객체
@@ -32,16 +35,15 @@ class Elements:
         :param primary_key: 성경책의 고유 pk 값
         :return: 성경책이 지니고 있는 총 챕터 숫자
         """
-        li = crawler.list_contents_from_soup(soup, bible_num)
-        b = crawler.book_info_from_list_contents(li)
-        k = crawler.pks_from_book_info(b)
-        n = crawler.names_from_book_info(b)
-        c = crawler.chapters_from_list_contents(li)
-        bible_dict = crawler.make_bible_data(k, n, c)
+        li = self.crawler.list_contents_from_soup(soup, bible_num)
+        b = self.crawler.book_info_from_list_contents(li)
+        k = self.crawler.pks_from_book_info(b)
+        n = self.crawler.names_from_book_info(b)
+        c = self.crawler.chapters_from_list_contents(li)
+        bible_dict = self.crawler.make_bible_data(k, n, c)
         return bible_dict[primary_key]
 
-    @staticmethod
-    def call_bible_info(soup, bible_data, rand_num):
+    def call_bible_info(self, soup, bible_data, rand_num):
         """
         성경 본문을 가져오는 함수
         :param soup: soup 객체
@@ -49,13 +51,12 @@ class Elements:
         :param rand_num: 성경 정보가 담긴 랜덤 숫자
         :return:
         """
-        re = crawler.read_contents_from_soup(soup)
-        p = crawler.paragraphs_from_read_contents(re)
-        t = crawler.texts_from_read_contents(re)
-        return crawler.make_bible_info(bible_data, rand_num, p, t)
+        re = self.crawler.read_contents_from_soup(soup)
+        p = self.crawler.paragraphs_from_read_contents(re)
+        t = self.crawler.texts_from_read_contents(re)
+        return self.crawler.make_bible_info(bible_data, rand_num, p, t)
 
-    @classmethod
-    def make_random_number(cls):
+    def make_random_number(self):
         """
         성경 숫자를 랜덤으로 만들어낼 함수
         :return:
@@ -66,25 +67,19 @@ class Elements:
         primary_key = random.randint(101, 146) if bible_num is 1 else random.randint(147, 173)
         # 장 넘버: 성경책 pk를 통해 알게 된 성경책이 총 몇 개의 장을 가지고 있는지 알아내고,
         # 그 숫자를 범위로 하는 랜덤 숫자를 가져온다
-        soup = cls.call_crawler_soup(bible_num)
-        chapters_count = cls.call_bible_data(soup, bible_num, primary_key).chapters_count
+        soup = self.call_crawler_soup(bible_num)
+        chapters_count = self.call_bible_data(soup, bible_num, primary_key).chapters_count
         chapter_num = random.randint(1, chapters_count)
 
         return bible_num, primary_key, chapter_num
-
-    def __init__(self):
-        self.main_bar = '=' * 52
-        self.main_title = '가톨릭 말씀사탕'.center(47, ' ')
 
     def start_menu(self):
         """
         시작 메뉴
         :return:
         """
-        welcome = '\n말씀사탕에 오신 것을 환영합니다.'
-        choice_msg = '사탕을 받으려면 "go"를 입력해주세요!\n나가시려면 "q"를 입력해주세요.'
-        print(welcome)
-        print(choice_msg)
+        print('\n말씀사탕에 오신 것을 환영합니다.')
+        print('사탕을 받으려면 "go"를 입력해주세요!\n나가시려면 "q"를 입력해주세요.')
         user_input = input('[go/q]: ')
 
         return self.validate(user_input)
