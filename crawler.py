@@ -37,13 +37,22 @@ class BibleCrawler:
         """
         인스턴스 속성 정의
         """
+        self.__commit = False
         self.__bible_num = None
         self.__primary_key = None
         self.__chapter_num = None
         self.__bible_data = None
-        self.__commit = False
 
     # --- 네임 맹글링 --- #
+
+    @property
+    def commit(self):
+        return self.__commit
+
+    @commit.setter
+    def commit(self, input_bool):
+        self.__commit = input_bool
+
     @property
     def bible_num(self):
         return self.__bible_num
@@ -75,14 +84,6 @@ class BibleCrawler:
     @bible_data.setter
     def bible_data(self, input_data):
         self.__bible_data = input_data
-
-    @property
-    def commit(self):
-        return self.__commit
-
-    @commit.setter
-    def commit(self, input_bool):
-        self.__commit = input_bool
 
     # --- HTML 문서 가져오기 --- #
 

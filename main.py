@@ -37,7 +37,8 @@ class Main(BibleCrawler):
         bible_info = self.make_bible_info()
         result = random.choice(bible_info)
 
-        return print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
+        print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
+        return result
 
     # --- 프로그램 실행 함수 --- #
 
