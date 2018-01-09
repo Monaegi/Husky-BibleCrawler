@@ -1,3 +1,4 @@
+import sqlite3
 import unittest
 from unittest.mock import patch
 
@@ -204,7 +205,7 @@ class CrawlerTest(unittest.TestCase):
         self.crawler.chapter_num = None
 
 
-class UITest(unittest.TestCase):
+class MainTest(unittest.TestCase):
     def setUp(self):
         """
         UI 테스트를 위한 전역변수 설정
@@ -248,6 +249,16 @@ class UITest(unittest.TestCase):
         with patch('builtins.input', side_effect=user_input):
             stacks = self.main.start_menu()
         self.assertEqual(stacks, expected_stacks[0])
+
+
+class DBTest(unittest.TestCase):
+    def test_db_connection(self):
+        """
+        sqlite3로 만든 bible.db에 잘 연결되는지 테스트
+        :return:
+        """
+        conn = sqlite3.connect('bible.db')
+        self.assertIsNotNone(conn)
 
 
 if __name__ == '__main__':
