@@ -32,6 +32,10 @@ class DB:
     def db_name(self):
         return self.__db_name
 
+    @db_name.setter
+    def db_name(self, input_db_name):
+        self.__db_name = input_db_name
+
     @property
     def conn(self):
         return self.__conn
@@ -57,7 +61,7 @@ class DB:
     def create_data_table(self):
         """
         bible_data 테이블을 생성하는 함수
-        :return:
+        :return: None
         """
         # sqlite3 connection 객체 생성
         conn = self.conn if self.conn else self.create_db_connection()
@@ -70,7 +74,25 @@ class DB:
         except sqlite3.Error as e:
             print(e)
 
+    def insert_bible_data_into_db(self, bible_data):
+        """
+        bible_data를 db 안에 넣는 함수
+        :param bible_data: 크롤러가 생성한 bible_data
+        :return:
+        """
+        sql_command = """ INSERT INTO bible_data(bible_pk, name, chapter_count) VALUES(?,?,?) """
+
+        data_comp = ((book, bible_data[book].books_name, bible_data[book].chapters_count) for book in bible_data)
+
+        conn = self.conn if self.conn else self.create_db_connection()
+        cursor = conn.cursor()
+        try:
+            for data in data_comp:
+                cursor.execute(sql_command, data)
+            print('bible_data 추가 완료')
+        except sqlite3.Error as e:
+            print(e)
+
 
 if __name__ == '__main__':
     d = DB()
-

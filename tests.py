@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import patch
 
+import os
+
 from crawler import BibleCrawler
 from database import DB
 from main import Main
@@ -254,28 +256,63 @@ class MainTest(unittest.TestCase):
 class DBTest(unittest.TestCase):
     def setUp(self):
         self.database = DB()
+        self.database.db_name = 'test.db'
+        self.conn = self.database.create_db_connection()
 
     def test_create_db_connection(self):
         """
         sqlite3로 만든 bible.db에 잘 연결되는지 테스트
         :return:
         """
-        conn = self.database.create_db_connection()
-        self.assertIsNotNone(conn)
+        self.assertIsNotNone(self.conn)
 
     def test_create_bible_data_table(self):
         """
         bible_data 딕셔너리를 DB에 잘 저장하는지 테스트
-        :return:
+        :return: None
         """
-        conn = self.database.create_db_connection()
         self.database.create_data_table()
-        cursor = conn.cursor()
+        cursor = self.conn.cursor()
         result = cursor.execute(""" SELECT name FROM sqlite_master WHERE type='table'; """)
         table_list = [table for table in result]
+
         self.assertEqual(len(table_list), 2)
         self.assertEqual(table_list[0][0], 'bible_data')
         self.assertEqual(table_list[1][0], 'bible_info')
+
+    def test_insert_bible_data_into_db(self):
+        """
+        bible_data가 db 안에 잘 들어가는지 테스트
+        :return: None
+        """
+        self.database.create_data_table()
+
+        crawler = BibleCrawler()
+
+        # 구약성경 테스트
+        crawler.bible_num = 1
+        crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(crawler.bible_data)
+        cursor = self.conn.cursor()
+        result = cursor.execute(""" SELECT * FROM bible_data; """)
+        row_list = [row for row in result]
+        self.assertEqual(len(row_list), 46)
+
+        # 신약성경 테스트
+        crawler.bible_num = 2
+        crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(crawler.bible_data)
+        cursor = self.conn.cursor()
+        result = cursor.execute(""" SELECT * FROM bible_data; """)
+        row_list = [row for row in result]
+        self.assertEqual(len(row_list), 73)  # 46 + 27 = 73 이므로
+
+    def tearDown(self):
+        """
+        테스트가 끝나면 test.db를 삭제한다
+        :return:
+        """
+        os.remove('test.db')
 
 
 if __name__ == '__main__':
