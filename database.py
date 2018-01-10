@@ -80,10 +80,12 @@ class DB:
         :param bible_data: 크롤러가 생성한 bible_data
         :return: None
         """
+        # sql 명령문: bible_data 테이블에 해당하는 값을 넣어라
         sql_command = """ INSERT INTO bible_data(bible_pk, name, chapter_count) VALUES(?,?,?) """
-
+        # db에 넣을 값: bible_data에서 db에 넣을 수 있는 튜플 형태로 재변환
         data_comp = ((book, bible_data[book].books_name, bible_data[book].chapters_count) for book in bible_data)
 
+        # 커서를 꺼내 data_comp를 순회하며 db에 정보를 넣는다
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
@@ -99,10 +101,12 @@ class DB:
         :param bible_info:
         :return: None
         """
+        # sql 명령문: bible_info 테이블에 해당하는 값을 넣어라
         sql_command = """ INSERT INTO bible_info(name, chapter_num, paragraph_num, texts) VALUES(?,?,?,?) """
-
+        # db에 넣을 값: bible_info에서 db에 넣을 수 있는 튜플 형태로 재변환
         info_comp = ((info.books_name, info.chapter_num, info.paragraph_num, info.texts) for info in bible_info)
 
+        # 커서를 꺼내 info_comp를 순회하며 db에 정보를 넣는다
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
