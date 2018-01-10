@@ -9,8 +9,6 @@ class Main(DB, BibleCrawler):
     실행을 위한 메인 클래스
     """
 
-
-
     # --- 크롤러 실행 함수 --- #
 
     def make_random_number(self):
@@ -23,13 +21,13 @@ class Main(DB, BibleCrawler):
         # 성경책 pk: 구약성경일 경우 101~146 사이, 신약성경일 경우 147~173 사이
         self.primary_key = random.randint(101, 146) if self.bible_num is 1 else random.randint(147, 173)
 
-        # db를 검색한다
+        # db를 검색하여 만일 db에 값이 있다면 db의 chapter_count로 chapter_num을 계산한다
         db_chapters_count = self.search_bible_data_from_db(self.primary_key)
 
-        # 만일 db에 값이 있다면 db의 chapter_count로 chapter_num을 계산한다
         if db_chapters_count:
             self.chapter_num = random.randint(1, db_chapters_count)
 
+        # 없다면 크롤링 데이터로 chapter_num을 계산한다
         else:
             # payload를 False로 세팅한다
             self.commit = False
@@ -37,6 +35,9 @@ class Main(DB, BibleCrawler):
             # 그 숫자를 범위로 하는 랜덤 숫자를 가져온다
             crawler_chapters_count = self.make_bible_data()[self.primary_key].chapters_count
             self.chapter_num = random.randint(1, int(crawler_chapters_count))
+
+            # bible_data를 db에 저장한다
+            self.insert_bible_data_into_db(self.bible_data)
 
         return self.chapter_num
 
@@ -59,6 +60,9 @@ class Main(DB, BibleCrawler):
         시작 메뉴
         :return: 사용자가 입력한 값을 인자로 하는 validate 함수
         """
+        # db 존재 여부 검사하고 데이터 테이블 생성
+        self.search_data_table()
+
         main_bar = '=' * 52
 
         print(main_bar)
