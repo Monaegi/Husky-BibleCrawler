@@ -1,12 +1,15 @@
 import random
 
 from crawler import BibleCrawler
+from database import DB
 
 
-class Main(BibleCrawler):
+class Main(DB, BibleCrawler):
     """
     실행을 위한 메인 클래스
     """
+
+
 
     # --- 크롤러 실행 함수 --- #
 
@@ -19,12 +22,21 @@ class Main(BibleCrawler):
         self.bible_num = random.randint(1, 2)
         # 성경책 pk: 구약성경일 경우 101~146 사이, 신약성경일 경우 147~173 사이
         self.primary_key = random.randint(101, 146) if self.bible_num is 1 else random.randint(147, 173)
-        # payload를 False로 세팅한다
-        self.commit = False
-        # 장 넘버: 성경책 pk를 통해 알게 된 성경책이 총 몇 개의 장을 가지고 있는지 알아내고,
-        # 그 숫자를 범위로 하는 랜덤 숫자를 가져온다
-        chapters_count = self.make_bible_data()[self.primary_key].chapters_count
-        self.chapter_num = random.randint(1, int(chapters_count))
+
+        # db를 검색한다
+        db_chapters_count = self.search_bible_data_from_db(self.primary_key)
+
+        # 만일 db에 값이 있다면 db의 chapter_count로 chapter_num을 계산한다
+        if db_chapters_count:
+            self.chapter_num = random.randint(1, db_chapters_count)
+
+        else:
+            # payload를 False로 세팅한다
+            self.commit = False
+            # 장 넘버: 성경책 pk를 통해 알게 된 성경책이 총 몇 개의 장을 가지고 있는지 알아내고,
+            # 그 숫자를 범위로 하는 랜덤 숫자를 가져온다
+            crawler_chapters_count = self.make_bible_data()[self.primary_key].chapters_count
+            self.chapter_num = random.randint(1, int(crawler_chapters_count))
 
         return self.chapter_num
 

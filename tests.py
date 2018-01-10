@@ -268,9 +268,28 @@ class DBTest(unittest.TestCase):
         """
         self.assertIsNotNone(self.conn)
 
-    def test_create_bible_data_table(self):
+    def test_search_data_table(self):
         """
-        bible_data 딕셔너리를 DB에 잘 저장하는지 테스트
+        db에 테이블이 존재하는지 테스트
+        :return: None
+        """
+        # 테이블이 없을 경우: 테이블 생성 함수 자동 호출
+        self.database.search_data_table()
+        cursor = self.conn.cursor()
+        result = cursor.execute(""" SELECT name FROM sqlite_master WHERE type='table'; """)
+        table_list = [table for table in result]
+
+        self.assertEqual(len(table_list), 2)
+        self.assertEqual(table_list[0][0], 'bible_data')
+        self.assertEqual(table_list[1][0], 'bible_info')
+
+        # 테이블이 있을 경우: None 리턴
+        already_exists = self.database.search_data_table()
+        self.assertEqual(already_exists, None)
+
+    def test_create_data_table(self):
+        """
+        bible_data와 bible_info 테이블을 잘 생성하는지 테스트
         :return: None
         """
         self.database.create_data_table()

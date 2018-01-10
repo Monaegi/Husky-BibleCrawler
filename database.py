@@ -48,7 +48,7 @@ class DB:
     def create_table_commands(self):
         return self.__create_table_commands
 
-    # --- 인스턴스 메서드 ---#
+    # --- db 및 테이블 생성 함수 ---#
 
     def create_db_connection(self):
         """
@@ -57,6 +57,23 @@ class DB:
         """
         self.conn = sqlite3.connect(self.db_name)
         return self.conn
+
+    def search_data_table(self):
+        """
+        db에 테이블이 존재하는지 테스트
+        :return: 있다면: None, 없다면: create_data_table 함수
+        """
+        # sqlite3 connection 객체 생성
+        conn = self.conn if self.conn else self.create_db_connection()
+        # cursor 객체 가져오기
+        cursor = conn.cursor()
+
+        # 테이블 존재 유무 검사
+        result = cursor.execute(""" SELECT name FROM sqlite_master WHERE type='table'; """)
+        table_list = [table for table in result]
+
+        # 삼항자 연산: 테이블이 있을 경우가 더 많을 테니 None을 우선함
+        return None if len(table_list) is not 0 else self.create_data_table()
 
     def create_data_table(self):
         """
@@ -67,11 +84,16 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         # cursor 객체 가져오기
         cursor = conn.cursor()
+
+        # 테이블 생성
         print('DB table을 생성합니다...')
         cursor.execute(self.create_table_commands['bible_data'])
         cursor.execute(self.create_table_commands['bible_info'])
         print('DB table 생성 완료')
+
         return None
+
+    # --- 데이터 삽입 함수 --- #
 
     def insert_bible_data_into_db(self, bible_data):
         """
@@ -122,6 +144,8 @@ class DB:
         except sqlite3.Error as e:
             print(e)
             return e
+
+    # --- 데이터 검색 함수 --- #
 
     def search_bible_data_from_db(self, primary_key):
         """
