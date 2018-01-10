@@ -1,8 +1,8 @@
-import sqlite3
 import unittest
 from unittest.mock import patch
 
 from crawler import BibleCrawler
+from database import DB
 from main import Main
 
 
@@ -252,13 +252,30 @@ class MainTest(unittest.TestCase):
 
 
 class DBTest(unittest.TestCase):
-    def test_db_connection(self):
+    def setUp(self):
+        self.database = DB()
+
+    def test_create_db_connection(self):
         """
         sqlite3로 만든 bible.db에 잘 연결되는지 테스트
         :return:
         """
-        conn = sqlite3.connect('bible.db')
+        conn = self.database.create_db_connection()
         self.assertIsNotNone(conn)
+
+    def test_create_bible_data_table(self):
+        """
+        bible_data 딕셔너리를 DB에 잘 저장하는지 테스트
+        :return:
+        """
+        conn = self.database.create_db_connection()
+        self.database.create_data_table()
+        cursor = conn.cursor()
+        result = cursor.execute(""" SELECT name FROM sqlite_master WHERE type='table'; """)
+        table_list = [table for table in result]
+        self.assertEqual(len(table_list), 2)
+        self.assertEqual(table_list[0][0], 'bible_data')
+        self.assertEqual(table_list[1][0], 'bible_info')
 
 
 if __name__ == '__main__':
