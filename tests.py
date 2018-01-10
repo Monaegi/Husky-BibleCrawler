@@ -287,7 +287,13 @@ class DBTest(unittest.TestCase):
         bible_data가 db 안에 잘 들어가는지 테스트
         :return: None
         """
-        # 테이블 생성
+        # sqlite error 테스트 (data_table이 없을 경우)
+        self.crawler.bible_num = 1
+        self.crawler.make_bible_data()
+        error = self.database.insert_bible_data_into_db(self.crawler.bible_data)
+        self.assertEqual(error.args[0], 'no such table: bible_data')
+
+        # 정상 테스트 시작: 테이블 생성
         self.database.create_data_table()
 
         # 구약성경 테스트
@@ -313,9 +319,6 @@ class DBTest(unittest.TestCase):
         bible_info가 db에 잘 들어가는지 테스트
         :return: None
         """
-        # 테이블 생성
-        self.database.create_data_table()
-
         # 인스턴스 속성 설정: 구약성경 창세기 1장
         self.crawler.bible_num = 1
         self.crawler.primary_key = 101
@@ -329,6 +332,13 @@ class DBTest(unittest.TestCase):
         self.crawler.commit = True
         bible_info = self.crawler.make_bible_info()
 
+        # sqlite error 테스트 (data_table이 없을 경우)
+        error = self.database.insert_bible_info_into_db(bible_info)
+        self.assertEqual(error.args[0], 'no such table: bible_info')
+
+        # 정상 테스트 시작: 테이블 생성
+        self.database.create_data_table()
+
         # db 테스트
         self.database.insert_bible_info_into_db(bible_info)
         cursor = self.conn.cursor()
@@ -340,12 +350,16 @@ class DBTest(unittest.TestCase):
         """
         랜덤 숫자를 기반으로 bible_data를 잘 검색하는지 테스트
         """
-        # 테이블 생성
-        self.database.create_data_table()
-
         # 인스턴스 속성 설정: 구약성경 창세기
         self.crawler.bible_num = 1
         self.crawler.primary_key = 101
+
+        # sqlite error 테스트 (data_table이 없을 경우)
+        error = self.database.search_bible_data_from_db(self.crawler.primary_key)
+        self.assertEqual(error.args[0], 'no such table: bible_data')
+
+        # 정상 테스트 시작: 테이블 생성
+        self.database.create_data_table()
 
         # db에 bible_data 없는 상태에서 검색 테스트
         result_none = self.database.search_bible_data_from_db(self.crawler.primary_key)

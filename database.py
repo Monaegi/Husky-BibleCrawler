@@ -67,13 +67,11 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         # cursor 객체 가져오기
         cursor = conn.cursor()
-        try:
-            print('DB table을 생성합니다...')
-            cursor.execute(self.create_table_commands['bible_data'])
-            cursor.execute(self.create_table_commands['bible_info'])
-            print('DB table 생성 완료')
-        except sqlite3.Error as e:
-            print(e)
+        print('DB table을 생성합니다...')
+        cursor.execute(self.create_table_commands['bible_data'])
+        cursor.execute(self.create_table_commands['bible_info'])
+        print('DB table 생성 완료')
+        return None
 
     def insert_bible_data_into_db(self, bible_data):
         """
@@ -94,8 +92,11 @@ class DB:
             for data in data_comp:
                 cursor.execute(sql_command, data)
             print('성경 데이터 추가 완료')
+            return None
+        # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
             print(e)
+            return e
 
     def insert_bible_info_into_db(self, bible_info):
         """
@@ -116,8 +117,11 @@ class DB:
             for info in info_comp:
                 cursor.execute(sql_command, info)
             print('성경 정보 추가 완료')
+            return None
+        # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
             print(e)
+            return e
 
     def search_bible_data_from_db(self, primary_key):
         """
@@ -135,6 +139,7 @@ class DB:
             data = cursor.execute(sql_command)
             result_comp = [count for count in data]
 
+            # 값이 검색되면 성공 메시지를 출력하고 chapter_count를 리턴한다
             if len(result_comp) is 1:
                 print('성경 데이터 검색 완료')
                 return result_comp[0][0]
@@ -142,9 +147,11 @@ class DB:
                 print('DB에 성경 데이터가 없습니다. 웹 검색을 시작합니다...')
                 return None
 
+        # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
             print(e)
+            return e
 
 
 if __name__ == '__main__':
-    d = DB()
+    pass
