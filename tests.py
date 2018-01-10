@@ -259,6 +259,8 @@ class DBTest(unittest.TestCase):
         self.database.db_name = 'test.db'
         self.conn = self.database.create_db_connection()
 
+        self.crawler = BibleCrawler()
+
     def test_create_db_connection(self):
         """
         sqlite3로 만든 bible.db에 잘 연결되는지 테스트
@@ -285,27 +287,54 @@ class DBTest(unittest.TestCase):
         bible_data가 db 안에 잘 들어가는지 테스트
         :return: None
         """
+        # 테이블 생성
         self.database.create_data_table()
 
-        crawler = BibleCrawler()
-
         # 구약성경 테스트
-        crawler.bible_num = 1
-        crawler.make_bible_data()
-        self.database.insert_bible_data_into_db(crawler.bible_data)
+        self.crawler.bible_num = 1
+        self.crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(self.crawler.bible_data)
         cursor = self.conn.cursor()
         result = cursor.execute(""" SELECT * FROM bible_data; """)
         row_list = [row for row in result]
         self.assertEqual(len(row_list), 46)
 
         # 신약성경 테스트
-        crawler.bible_num = 2
-        crawler.make_bible_data()
-        self.database.insert_bible_data_into_db(crawler.bible_data)
+        self.crawler.bible_num = 2
+        self.crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(self.crawler.bible_data)
         cursor = self.conn.cursor()
         result = cursor.execute(""" SELECT * FROM bible_data; """)
         row_list = [row for row in result]
         self.assertEqual(len(row_list), 73)  # 46 + 27 = 73 이므로
+
+    def test_insert_bible_info_into_db(self):
+        """
+        bible_info가 db에 잘 들어가는지 테스트
+        :return: None
+        """
+        # 테이블 생성
+        self.database.create_data_table()
+
+        # 인스턴스 속성 설정: 구약성경 창세기 1장
+        self.crawler.bible_num = 1
+        self.crawler.primary_key = 101
+        self.crawler.chapter_num = 1
+
+        # bible_data 생성
+        self.crawler.commit = False
+        self.crawler.make_bible_data()
+
+        # bible_info 생성
+        self.crawler.commit = True
+        bible_info = self.crawler.make_bible_info()
+
+        # db 테스트
+        self.database.insert_bible_info_into_db(bible_info)
+        cursor = self.conn.cursor()
+        result = cursor.execute(""" SELECT * FROM bible_info; """)
+        row_list = [row for row in result]
+        self.assertEqual(len(row_list), 31)  # 창세기chapter_num
 
     def tearDown(self):
         """

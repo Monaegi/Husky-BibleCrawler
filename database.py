@@ -78,7 +78,7 @@ class DB:
         """
         bible_data를 db 안에 넣는 함수
         :param bible_data: 크롤러가 생성한 bible_data
-        :return:
+        :return: None
         """
         sql_command = """ INSERT INTO bible_data(bible_pk, name, chapter_count) VALUES(?,?,?) """
 
@@ -90,6 +90,25 @@ class DB:
             for data in data_comp:
                 cursor.execute(sql_command, data)
             print('bible_data 추가 완료')
+        except sqlite3.Error as e:
+            print(e)
+
+    def insert_bible_info_into_db(self, bible_info):
+        """
+        bible_info를 db 안에 넣는 함수
+        :param bible_info:
+        :return: None
+        """
+        sql_command = """ INSERT INTO bible_info(name, chapter_num, paragraph_num, texts) VALUES(?,?,?,?) """
+
+        info_comp = ((info.books_name, info.chapter_num, info.paragraph_num, info.texts) for info in bible_info)
+
+        conn = self.conn if self.conn else self.create_db_connection()
+        cursor = conn.cursor()
+        try:
+            for info in info_comp:
+                cursor.execute(sql_command, info)
+            print('bible_info 추가 완료')
         except sqlite3.Error as e:
             print(e)
 
