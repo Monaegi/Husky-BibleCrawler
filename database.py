@@ -68,6 +68,7 @@ class DB:
         # cursor 객체 가져오기
         cursor = conn.cursor()
         try:
+            print('DB table을 생성합니다...')
             cursor.execute(self.create_table_commands['bible_data'])
             cursor.execute(self.create_table_commands['bible_info'])
             print('DB table 생성 완료')
@@ -89,9 +90,10 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
+            print('성경 데이터를 DB에 추가합니다...')
             for data in data_comp:
                 cursor.execute(sql_command, data)
-            print('bible_data 추가 완료')
+            print('성경 데이터 추가 완료')
         except sqlite3.Error as e:
             print(e)
 
@@ -110,9 +112,36 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
+            print('성경 정보를 DB에 추가합니다...')
             for info in info_comp:
                 cursor.execute(sql_command, info)
-            print('bible_info 추가 완료')
+            print('성경 정보 추가 완료')
+        except sqlite3.Error as e:
+            print(e)
+
+    def search_bible_data_from_db(self, primary_key):
+        """
+        db에서 bible_data를 검색하는 함수
+        :return: data가 있으면: primary Key에 해당하는 성경책의 chapter_count, 없으면: None
+        """
+        # sql 명령문: bible_data 테이블에서 입력한 primary_key 값에 해당하는 chapter_count를 출력하라
+        sql_command = """ SELECT chapter_count FROM bible_data WHERE bible_pk=%d """ % primary_key
+
+        # 커서를 꺼내 db를 검색한다
+        conn = self.conn if self.conn else self.create_db_connection()
+        cursor = conn.cursor()
+        try:
+            print('성경 데이터를 검색합니다...')
+            data = cursor.execute(sql_command)
+            result_comp = [count for count in data]
+
+            if len(result_comp) is 1:
+                print('성경 데이터 검색 완료')
+                return result_comp[0][0]
+            else:
+                print('DB에 성경 데이터가 없습니다. 웹 검색을 시작합니다...')
+                return None
+
         except sqlite3.Error as e:
             print(e)
 

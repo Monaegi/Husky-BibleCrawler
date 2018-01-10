@@ -336,6 +336,30 @@ class DBTest(unittest.TestCase):
         row_list = [row for row in result]
         self.assertEqual(len(row_list), 31)  # 창세기chapter_num
 
+    def test_search_bible_data_from_db(self):
+        """
+        랜덤 숫자를 기반으로 bible_data를 잘 검색하는지 테스트
+        """
+        # 테이블 생성
+        self.database.create_data_table()
+
+        # 인스턴스 속성 설정: 구약성경 창세기
+        self.crawler.bible_num = 1
+        self.crawler.primary_key = 101
+
+        # db에 bible_data 없는 상태에서 검색 테스트
+        result_none = self.database.search_bible_data_from_db(self.crawler.primary_key)
+        self.assertEqual(result_none, None)
+
+        # bible_data 생성하고 db에 넣기
+        self.crawler.commit = False
+        self.crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(self.crawler.bible_data)
+
+        # 검색 테스트
+        result_item = self.database.search_bible_data_from_db(self.crawler.primary_key)
+        self.assertEqual(result_item, 50)
+
     def tearDown(self):
         """
         테스트가 끝나면 test.db를 삭제한다
