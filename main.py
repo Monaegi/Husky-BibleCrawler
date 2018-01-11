@@ -56,7 +56,7 @@ class Main(DB, BibleCrawler):
         if db_bible_info is not None:
             result = random.choice(db_bible_info)
             name, chapter_num, paragraph_num, texts = result
-            print(Fore.BLUE + f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})\n\n')
+            print(Fore.BLUE + f'\n\n{texts} ({name} {chapter_num}-{paragraph_num})\n\n')
             print(Style.RESET_ALL)
             return result
 
