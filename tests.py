@@ -367,7 +367,8 @@ class DBTest(unittest.TestCase):
         cursor = self.conn.cursor()
         result = cursor.execute(""" SELECT * FROM bible_info; """)
         row_list = [row for row in result]
-        self.assertEqual(len(row_list), 31)  # 창세기chapter_num
+        # 결과값이 창세기 장 수 31개와 일치하는가
+        self.assertEqual(len(row_list), 31)
 
     # --- 데이터 검색 함수 --- #
 
@@ -407,13 +408,42 @@ class DBTest(unittest.TestCase):
         # 인스턴스 속성 설정: 구약성경 창세기
         self.crawler.bible_num = 1
         self.crawler.primary_key = 101
+        self.crawler.chapter_num = 1
 
         # sqlite error 테스트 (data_table이 없을 경우)
-        error = self.database.search_bible_info_from_db()
-        self.assertEqual(error.args[0], 'no such table: bible_data')
+        error = self.database.search_bible_info_from_db(
+            self.crawler.primary_key,
+            self.crawler.chapter_num
+        )
+        self.assertEqual(error.args[0], 'no such table: bible_info')
 
         # 정상 테스트 시작: 테이블 생성
         self.database.create_data_table()
+
+        # bible_data 생성하고 db에 넣기
+        self.crawler.commit = False
+        self.crawler.make_bible_data()
+        self.database.insert_bible_data_into_db(self.crawler.bible_data)
+
+        # db에 bible_info 없는 상태에서 검색 테스트
+        result_none = self.database.search_bible_info_from_db(
+            self.crawler.primary_key,
+            self.crawler.chapter_num
+        )
+        self.assertEqual(result_none, None)
+
+        # bible_info 생성하고 db에 넣기
+        self.crawler.commit = True
+        bible_info = self.crawler.make_bible_info()
+        self.database.insert_bible_info_into_db(bible_info)
+
+        # 검색 테스트
+        result_item = self.database.search_bible_info_from_db(
+            self.crawler.primary_key,
+            self.crawler.chapter_num
+        )
+        # 결과값이 창세기 장 수 31개와 일치하는가
+        self.assertEqual(len(result_item), 31)
 
     def tearDown(self):
         """

@@ -176,6 +176,40 @@ class DB:
             print(e)
             return e
 
+    def search_bible_info_from_db(self, primary_key, chapter_num):
+        """
+        db에서 name과 chapter_num을 이용해 이에 해당하는 paragraph row를 검색한다
+        :return: 있다면: 조건에 해당하는 말씀 row 리스트, 없다면: None
+        """
+        # sql 명령문: bible_info 테이블과 bible_data 테이블 중 name이 일치하는 row를 검색하고
+        # 그 중에서 primary_key와 chapter_num이 일치하는 row를 고른다
+        sql_command = """ SELECT bible_info.name, chapter_num, paragraph_num, texts 
+                          FROM bible_info
+                          INNER JOIN bible_data ON bible_data.name = bible_info.name
+                          WHERE bible_pk = {0} AND chapter_num = {1}; 
+                          """.format(primary_key, chapter_num)
+
+        # 커서를 꺼내 db를 검색한다
+        conn = self.conn if self.conn else self.create_db_connection()
+        cursor = conn.cursor()
+        try:
+            print('성경 정보를 검색합니다...')
+            info = cursor.execute(sql_command)
+            result_comp = [logos for logos in info]
+
+            # 값이 검색되면 성공 메시지를 출력하고 row 리스트를 리턴한다
+            if len(result_comp) is not 0:
+                print('성경 정보 검색 완료')
+                return result_comp
+            else:
+                print('DB에 성경 데이터가 없습니다. 웹 검색을 시작합니다...')
+                return None
+
+        # 예외처리: data_table이 없을 경우
+        except sqlite3.Error as e:
+            print(e)
+            return e
+
 
 if __name__ == '__main__':
     pass
