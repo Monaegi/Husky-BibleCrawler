@@ -6,8 +6,6 @@ import re
 from bs4 import BeautifulSoup
 import requests
 
-from database import DB
-
 
 # --- 자료구조 --- #
 
