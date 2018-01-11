@@ -36,8 +36,8 @@ class Main(DB, BibleCrawler):
             crawler_chapters_count = self.make_bible_data()[self.primary_key].chapters_count
             self.chapter_num = random.randint(1, int(crawler_chapters_count))
 
-            # bible_data를 db에 저장한다
-            self.insert_bible_data_into_db(self.bible_data)
+        # bible_data를 db에 저장한다
+        self.insert_bible_data_into_db(self.bible_data)
 
         return self.chapter_num
 
@@ -46,12 +46,28 @@ class Main(DB, BibleCrawler):
         크롤러에서 랜덤으로 말씀을 가져온다
         :return: 말씀 객체
         """
-        # 랜덤 숫자를 기반으로 성경 구절을 가져온다
-        bible_info = self.make_bible_info()
-        result = random.choice(bible_info)
+        # db에서 검색을 시도한다
+        db_bible_info = self.search_bible_info_from_db(
+            self.primary_key,
+            self.chapter_num
+        )
+        if db_bible_info is not None:
+            result = random.choice(db_bible_info)
+            name, chapter_num, paragraph_num, texts = result
+            print(f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})')
+            return result
 
-        print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
-        return result
+        else:
+            # payload의 옵션을 바꾸기 위해 commit=True로 맞춘다
+            self.commit = True
+            # 크롤링 데이터에서 성경 구절을 가져온다
+            crawler_bible_info = self.make_bible_info(self.conn)
+            result = random.choice(crawler_bible_info)
+            print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
+
+            # 크롤링 데이터를 db에 넣는다
+            self.insert_bible_info_into_db(crawler_bible_info)
+            return result
 
     # --- 프로그램 실행 함수 --- #
 
@@ -82,12 +98,11 @@ class Main(DB, BibleCrawler):
         :return:
         """
         while input_data != 'q':
+            # 'go'를 입력하면 말씀을 꺼내온다
             if input_data == 'go':
                 # 랜덤 숫자를 구한다
                 self.make_random_number()
-                # payload의 옵션을 바꾸기 위해 commit=True로 맞춘다
-                self.commit = True
-                # 'go'를 입력하면 크롤링을 요청해 말씀을 꺼내온다
+                # db를 검색하거나 크롤링 데이터를 이용해 말씀을 꺼내온다
                 self.get_message()
             else:
                 # 유효하지 않은 값이 들어오면 알려주고 메뉴로 돌려보낸다

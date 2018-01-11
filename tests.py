@@ -190,11 +190,16 @@ class CrawlerTest(unittest.TestCase):
         모든 요소들이 네임드튜플로 생성되는지 테스트
         :return: None
         """
+        # bible_data 생성
         self.crawler.commit = False
         self.crawler.make_bible_data()
 
+        # 데이터베이스 커넥션 호출
+        conn = DB().create_db_connection()
+
+        # bible_info 생성
         self.crawler.commit = True
-        bible_info = self.crawler.make_bible_info()
+        bible_info = self.crawler.make_bible_info(conn)
         self.assertEqual(len(bible_info), 31)
 
     def tearDown(self):
@@ -353,7 +358,7 @@ class DBTest(unittest.TestCase):
 
         # bible_info 생성
         self.crawler.commit = True
-        bible_info = self.crawler.make_bible_info()
+        bible_info = self.crawler.make_bible_info(self.conn)
 
         # sqlite error 테스트 (data_table이 없을 경우)
         error = self.database.insert_bible_info_into_db(bible_info)
@@ -434,7 +439,7 @@ class DBTest(unittest.TestCase):
 
         # bible_info 생성하고 db에 넣기
         self.crawler.commit = True
-        bible_info = self.crawler.make_bible_info()
+        bible_info = self.crawler.make_bible_info(self.conn)
         self.database.insert_bible_info_into_db(bible_info)
 
         # 검색 테스트

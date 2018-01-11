@@ -278,7 +278,7 @@ class BibleCrawler:
         # ex: 다윗의 자손이시며 아브라함의 자손이신 예수 그리스도의 족보. ...
         return (i.text.strip() for i in raw_texts)
 
-    def make_bible_info(self):
+    def make_bible_info(self, conn):
         """
         본문 정보가 담긴 자료구조를 생성한다
         :return: 본문 정보 네임드튜플로 구성된 리스트
@@ -287,7 +287,6 @@ class BibleCrawler:
         sql_command = """ SELECT name FROM bible_data WHERE bible_pk=%d """ % self.primary_key
 
         # 커서를 꺼내 db를 검색한다
-        conn = DB().conn if DB().conn else DB().create_db_connection()
         cursor = conn.cursor()
         try:
             data = cursor.execute(sql_command)
