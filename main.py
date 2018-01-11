@@ -1,5 +1,7 @@
 import random
 
+from colorama import Fore, Style
+
 from crawler import BibleCrawler
 from database import DB
 
@@ -54,7 +56,8 @@ class Main(DB, BibleCrawler):
         if db_bible_info is not None:
             result = random.choice(db_bible_info)
             name, chapter_num, paragraph_num, texts = result
-            print(f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})\n\n\n')
+            print(Fore.BLUE + f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})\n\n')
+            print(Style.RESET_ALL)
             return result
 
         else:
@@ -63,7 +66,9 @@ class Main(DB, BibleCrawler):
             # 크롤링 데이터에서 성경 구절을 가져온다
             crawler_bible_info = self.make_bible_info(self.conn)
             result = random.choice(crawler_bible_info)
-            print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n\n\n')
+            print(Fore.BLUE + f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})'
+                              f'\n\n')
+            print(Style.RESET_ALL)
 
             # 크롤링 데이터를 db에 넣는다
             self.insert_bible_info_into_db(crawler_bible_info)
