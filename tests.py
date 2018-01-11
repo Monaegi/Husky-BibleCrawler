@@ -261,6 +261,8 @@ class DBTest(unittest.TestCase):
 
         self.crawler = BibleCrawler()
 
+    # --- db 및 테이블 생성 함수 ---#
+
     def test_create_db_connection(self):
         """
         sqlite3로 만든 bible.db에 잘 연결되는지 테스트
@@ -300,6 +302,8 @@ class DBTest(unittest.TestCase):
         self.assertEqual(len(table_list), 2)
         self.assertEqual(table_list[0][0], 'bible_data')
         self.assertEqual(table_list[1][0], 'bible_info')
+
+    # --- 데이터 삽입 함수 --- #
 
     def test_insert_bible_data_into_db(self):
         """
@@ -365,6 +369,8 @@ class DBTest(unittest.TestCase):
         row_list = [row for row in result]
         self.assertEqual(len(row_list), 31)  # 창세기chapter_num
 
+    # --- 데이터 검색 함수 --- #
+
     def test_search_bible_data_from_db(self):
         """
         랜덤 숫자를 기반으로 bible_data를 잘 검색하는지 테스트
@@ -392,6 +398,22 @@ class DBTest(unittest.TestCase):
         # 검색 테스트
         result_item = self.database.search_bible_data_from_db(self.crawler.primary_key)
         self.assertEqual(result_item, 50)
+
+    def test_search_bible_info_from_db(self):
+        """
+        랜덤 숫자를 기반으로 bible_info를 검색하는 함수 테스트
+        :return:
+        """
+        # 인스턴스 속성 설정: 구약성경 창세기
+        self.crawler.bible_num = 1
+        self.crawler.primary_key = 101
+
+        # sqlite error 테스트 (data_table이 없을 경우)
+        error = self.database.search_bible_info_from_db()
+        self.assertEqual(error.args[0], 'no such table: bible_data')
+
+        # 정상 테스트 시작: 테이블 생성
+        self.database.create_data_table()
 
     def tearDown(self):
         """

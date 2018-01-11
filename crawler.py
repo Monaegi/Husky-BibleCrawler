@@ -1,9 +1,12 @@
+import sqlite3
 from typing import NamedTuple
 from urllib.parse import parse_qsl
 
 import re
 from bs4 import BeautifulSoup
 import requests
+
+from database import DB
 
 
 # --- 자료구조 --- #
@@ -280,7 +283,29 @@ class BibleCrawler:
         본문 정보가 담긴 자료구조를 생성한다
         :return: 본문 정보 네임드튜플로 구성된 리스트
         """
-        bible_dict = self.bible_data[self.primary_key]
+        # sql 명령문: bible_data 테이블에서 입력한 primary_key 값에 해당하는 name을 출력하라
+        sql_command = """ SELECT name FROM bible_data WHERE bible_pk=%d """ % self.primary_key
+
+        # 커서를 꺼내 db를 검색한다
+        conn = DB().conn if DB().conn else DB().create_db_connection()
+        cursor = conn.cursor()
+        try:
+            data = cursor.execute(sql_command)
+            result_comp = [book for book in data]
+
+            # result_comp가 정상적으로 들어왔다면: 언패킹을 한다
+            if len(result_comp) is not 0:
+                books_name = result_comp[0][0]
+            # 아니라면: bible_data에서 성경책 이름을 가져온다
+            else:
+                books_name = self.bible_data[self.primary_key].books_name
+
+        # 예외처리: data_table이 없을 경우
+        except sqlite3.Error as e:
+            print(e)
+
+
+        # paragraphs와 texts를 호출한다
         paragraphs = self.paragraphs_from_read_contents()
         texts = self.texts_from_read_contents()
 
@@ -288,7 +313,7 @@ class BibleCrawler:
         strip_comp = ((i[0], i[1]) for i in zip(paragraphs, texts) if i[0] is not '')
 
         # 성경 제목이 제거된 제너레이터에 성경책 이름과 장 숫자를 첨가해 새로운 제너레이터를 만든다
-        result_comp = ((bible_dict.books_name, self.chapter_num, i[0], i[1]) for i in strip_comp)
+        result_comp = ((books_name, self.chapter_num, i[0], i[1]) for i in strip_comp)
 
         # 최종 제너레이터를 순회하며 네임드튜플에 담는다
         return [BibleInfo(
