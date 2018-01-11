@@ -91,6 +91,8 @@ class DB:
         cursor.execute(self.create_table_commands['bible_info'])
         print('DB table 생성 완료')
 
+        # commit
+        conn.commit()
         return None
 
     # --- 데이터 삽입 함수 --- #
@@ -110,10 +112,12 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
-            print('성경 데이터를 DB에 추가합니다...')
+            print('\nbible_data를 DB에 추가합니다...\n')
             for data in data_comp:
                 cursor.execute(sql_command, data)
-            print('성경 데이터 추가 완료')
+                print(f'bible_data({data[1]}) 추가 완료')
+            # commit
+            conn.commit()
             return None
         # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
@@ -135,10 +139,12 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
-            print('성경 정보를 DB에 추가합니다...')
+            print('bible_info를 DB에 추가합니다...\n')
             for info in info_comp:
                 cursor.execute(sql_command, info)
-            print('성경 정보 추가 완료')
+            print(f'bible_info 추가 완료\n\n')
+            # commit
+            conn.commit()
             return None
         # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
@@ -159,16 +165,16 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
-            print('성경 데이터를 검색합니다...')
+            print('\nbible_data를 검색합니다...\n')
             data = cursor.execute(sql_command)
             result_comp = [count for count in data]
 
             # 값이 검색되면 성공 메시지를 출력하고 chapter_count를 리턴한다
             if len(result_comp) is 1:
-                print('성경 데이터 검색 완료')
+                print(f'bible_data 검색 완료\n')
                 return result_comp[0][0]
             else:
-                print('DB에 성경 데이터가 없습니다. 웹 검색을 시작합니다...')
+                print('DB에 bible_data가 없습니다. 웹 검색을 시작합니다...')
                 return None
 
         # 예외처리: data_table이 없을 경우
@@ -193,16 +199,17 @@ class DB:
         conn = self.conn if self.conn else self.create_db_connection()
         cursor = conn.cursor()
         try:
-            print('성경 정보를 검색합니다...')
+            print('bible_info를 검색합니다...\n')
             info = cursor.execute(sql_command)
             result_comp = [logos for logos in info]
 
             # 값이 검색되면 성공 메시지를 출력하고 row 리스트를 리턴한다
             if len(result_comp) is not 0:
-                print('성경 정보 검색 완료')
+                print(
+                    f'bible_info({result_comp[0][0]}) 검색 완료\n')
                 return result_comp
             else:
-                print('DB에 성경 데이터가 없습니다. 웹 검색을 시작합니다...')
+                print('DB에 blble_info가 없습니다. 웹 검색 데이터를 활용합니다...\n')
                 return None
 
         # 예외처리: data_table이 없을 경우

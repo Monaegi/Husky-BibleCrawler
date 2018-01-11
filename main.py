@@ -36,8 +36,8 @@ class Main(DB, BibleCrawler):
             crawler_chapters_count = self.make_bible_data()[self.primary_key].chapters_count
             self.chapter_num = random.randint(1, int(crawler_chapters_count))
 
-        # bible_data를 db에 저장한다
-        self.insert_bible_data_into_db(self.bible_data)
+            # bible_data를 db에 저장한다
+            self.insert_bible_data_into_db(self.bible_data)
 
         return self.chapter_num
 
@@ -54,7 +54,7 @@ class Main(DB, BibleCrawler):
         if db_bible_info is not None:
             result = random.choice(db_bible_info)
             name, chapter_num, paragraph_num, texts = result
-            print(f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})')
+            print(f'\n\n{texts}, ({name} {chapter_num}-{paragraph_num})\n\n\n')
             return result
 
         else:
@@ -63,7 +63,7 @@ class Main(DB, BibleCrawler):
             # 크롤링 데이터에서 성경 구절을 가져온다
             crawler_bible_info = self.make_bible_info(self.conn)
             result = random.choice(crawler_bible_info)
-            print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n')
+            print(f'\n\n{result.texts} ({result.books_name} {result.chapter_num}-{result.paragraph_num})\n\n\n')
 
             # 크롤링 데이터를 db에 넣는다
             self.insert_bible_info_into_db(crawler_bible_info)
