@@ -16,7 +16,7 @@
 
 ## 결과
 
-<div style="width:100%;height:0;padding-bottom:60%;position:relative;"><iframe src="https://giphy.com/embed/l3diKxtJFRjDNqW1W" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/l3diKxtJFRjDNqW1W">via GIPHY</a></p>
+[demo](./demo.gif)
 
 순수 파이썬 + 순수 sqlite3 SQL 명령어를 이용해 한번 크롤링한 데이터는 DB에 넣고, 한번 DB에 들어간 데이터가 다시 호출되면 DB에서 꺼내 보여주는 식으로 설계했다. DB에서 호출되는 구절은 엄청나게 빠른 속도로 출력됨을 확인할 수 있었다.
 
