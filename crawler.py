@@ -290,11 +290,6 @@ class BibleCrawler:
             data = cursor.execute(sql_command)
             books_name = [book for book in data][0][0]
 
-        # 예외처리: db 안에 아무것도 없을 경우
-        except IndexError:
-            print('DB에서 성경 정보를 발견하지 못했습니다. 웹 검색 데이터를 사용합니다...')
-            books_name = self.bible_data[self.primary_key].books_name
-
         # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
             print(e)

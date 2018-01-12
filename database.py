@@ -167,15 +167,16 @@ class DB:
         try:
             print('\nbible_data를 검색합니다...\n')
             data = cursor.execute(sql_command)
-            result_comp = [count for count in data]
+            result_comp = [count for count in data][0][0]
 
             # 값이 검색되면 성공 메시지를 출력하고 chapter_count를 리턴한다
-            if len(result_comp) is 1:
-                print(f'bible_data 검색 완료\n')
-                return result_comp[0][0]
-            else:
-                print('DB에 bible_data가 없습니다. 웹 검색을 시작합니다...')
-                return None
+            print(f'bible_data 검색 완료\n')
+            return result_comp
+
+        # 예외처리: bible_data가 없을 경우
+        except IndexError:
+            print('DB에 bible_data가 없습니다. 웹 검색을 시작합니다...')
+            return None
 
         # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
@@ -204,13 +205,13 @@ class DB:
             result_comp = [logos for logos in info]
 
             # 값이 검색되면 성공 메시지를 출력하고 row 리스트를 리턴한다
-            if len(result_comp) is not 0:
-                print(
-                    f'bible_info({result_comp[0][0]}) 검색 완료\n')
-                return result_comp
-            else:
-                print('DB에 blble_info가 없습니다. 웹 검색 데이터를 활용합니다...\n')
-                return None
+            print(f'bible_info({result_comp[0][0]}) 검색 완료\n')
+            return result_comp
+
+        # 예외처리: bible_info가 없을 경우
+        except IndexError:
+            print('DB에 blble_info가 없습니다. 웹 검색 데이터를 활용합니다...\n')
+            return None
 
         # 예외처리: data_table이 없을 경우
         except sqlite3.Error as e:
